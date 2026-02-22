@@ -34,7 +34,7 @@ func NewAuthServiceImpl(authService service.IAuthService, validator *utils.Valid
 func (s *AuthServiceImpl) Signup(ctx context.Context, req *pb.SignupRequest) (*pb.SignupResponse, error) {
 	// Validate request
 	if err := s.validateSignupRequest(req); err != nil {
-		logger.FromContext(ctx).Warn("signup validation error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Warn("signup validation error", zap.Error(err))
 		return nil, err
 	}
 
@@ -46,7 +46,7 @@ func (s *AuthServiceImpl) Signup(ctx context.Context, req *pb.SignupRequest) (*p
 
 	resp, err := s.authService.Signup(ctx, serviceReq)
 	if err != nil {
-		logger.FromContext(ctx).Error("signup error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Error("signup error", zap.Error(err))
 		return nil, err
 	}
 
@@ -60,7 +60,7 @@ func (s *AuthServiceImpl) Signup(ctx context.Context, req *pb.SignupRequest) (*p
 func (s *AuthServiceImpl) VerifyOTP(ctx context.Context, req *pb.VerifyOTPRequest) (*pb.VerifyOTPResponse, error) {
 	// Validate request
 	if err := s.validateVerifyOTPRequest(req); err != nil {
-		logger.FromContext(ctx).Warn("verify otp validation error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Warn("verify otp validation error", zap.Error(err))
 		return nil, err
 	}
 
@@ -72,7 +72,7 @@ func (s *AuthServiceImpl) VerifyOTP(ctx context.Context, req *pb.VerifyOTPReques
 
 	resp, err := s.authService.VerifyOTP(ctx, serviceReq)
 	if err != nil {
-		logger.FromContext(ctx).Error("verify otp error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Error("verify otp error", zap.Error(err))
 		return nil, err
 	}
 
@@ -87,7 +87,7 @@ func (s *AuthServiceImpl) VerifyOTP(ctx context.Context, req *pb.VerifyOTPReques
 func (s *AuthServiceImpl) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	// Validate request
 	if err := s.validateLoginRequest(req); err != nil {
-		logger.FromContext(ctx).Warn("login validation error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Warn("login validation error", zap.Error(err))
 		return nil, err
 	}
 
@@ -99,7 +99,7 @@ func (s *AuthServiceImpl) Login(ctx context.Context, req *pb.LoginRequest) (*pb.
 
 	resp, err := s.authService.Login(ctx, serviceReq)
 	if err != nil {
-		logger.FromContext(ctx).Error("login error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Error("login error", zap.Error(err))
 		return nil, err
 	}
 
@@ -124,7 +124,7 @@ func (s *AuthServiceImpl) ValidateSession(ctx context.Context, req *pb.ValidateS
 
 	resp, err := s.authService.ValidateSession(ctx, serviceReq)
 	if err != nil {
-		logger.FromContext(ctx).Error("validate session error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Error("validate session error", zap.Error(err))
 		return nil, err
 	}
 
@@ -149,7 +149,7 @@ func (s *AuthServiceImpl) RefreshSession(ctx context.Context, req *pb.RefreshSes
 
 	resp, err := s.authService.RefreshSession(ctx, serviceReq)
 	if err != nil {
-		logger.FromContext(ctx).Error("refresh session error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Error("refresh session error", zap.Error(err))
 		return nil, err
 	}
 
@@ -173,7 +173,7 @@ func (s *AuthServiceImpl) Logout(ctx context.Context, req *pb.LogoutRequest) (*p
 
 	resp, err := s.authService.Logout(ctx, serviceReq)
 	if err != nil {
-		logger.FromContext(ctx).Error("logout error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Error("logout error", zap.Error(err))
 		return nil, err
 	}
 
@@ -186,7 +186,7 @@ func (s *AuthServiceImpl) Logout(ctx context.Context, req *pb.LogoutRequest) (*p
 func (s *AuthServiceImpl) ForgotPassword(ctx context.Context, req *pb.ForgotPasswordRequest) (*pb.ForgotPasswordResponse, error) {
 	// Validate request
 	if err := s.validateForgotPasswordRequest(req); err != nil {
-		logger.FromContext(ctx).Warn("forgot password validation error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Warn("forgot password validation error", zap.Error(err))
 		return nil, err
 	}
 
@@ -197,7 +197,7 @@ func (s *AuthServiceImpl) ForgotPassword(ctx context.Context, req *pb.ForgotPass
 
 	resp, err := s.authService.ForgotPassword(ctx, serviceReq)
 	if err != nil {
-		logger.FromContext(ctx).Error("forgot password error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Error("forgot password error", zap.Error(err))
 		return nil, err
 	}
 
@@ -211,7 +211,7 @@ func (s *AuthServiceImpl) ForgotPassword(ctx context.Context, req *pb.ForgotPass
 func (s *AuthServiceImpl) ResetPassword(ctx context.Context, req *pb.ResetPasswordRequest) (*pb.ResetPasswordResponse, error) {
 	// Validate request
 	if err := s.validateResetPasswordRequest(req); err != nil {
-		logger.FromContext(ctx).Warn("reset password validation error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Warn("reset password validation error", zap.Error(err))
 		return nil, err
 	}
 
@@ -223,7 +223,7 @@ func (s *AuthServiceImpl) ResetPassword(ctx context.Context, req *pb.ResetPasswo
 
 	resp, err := s.authService.ResetPassword(ctx, serviceReq)
 	if err != nil {
-		logger.FromContext(ctx).Error("reset password error", zap.Error(err))
+		logger.FromContext(ctx).Ctx(ctx).Error("reset password error", zap.Error(err))
 		return nil, err
 	}
 

@@ -19,7 +19,7 @@ func ErrorInterceptor() grpc.UnaryServerInterceptor {
 		resp, err := handler(ctx, req)
 
 		if err != nil {
-			lgr := logger.FromContext(ctx)
+			lgr := logger.FromContext(ctx).Ctx(ctx)
 			lgr.Error("grpc error", zap.String("method", info.FullMethod), zap.Error(err))
 			return nil, errorToGRPCError(err)
 		}

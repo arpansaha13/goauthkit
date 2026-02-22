@@ -136,7 +136,6 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 		grpc.UnaryInterceptor(middleware.ChainUnaryInterceptors(
 			middleware.ErrorInterceptor(),
 			middleware.RecoveryInterceptor(),
-			middleware.LoggingInterceptor(),
 			middleware.AuthorizationInterceptor(),
 		)),
 	)

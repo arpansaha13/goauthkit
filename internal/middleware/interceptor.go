@@ -40,7 +40,7 @@ func RecoveryInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		defer func() {
 			if r := recover(); r != nil {
-				lgr := logger.FromContext(ctx)
+				lgr := logger.FromContext(ctx).Ctx(ctx)
 				lgr.Error("panic recovered", zap.Any("panic_value", r), zap.String("method", info.FullMethod))
 				err = status.Error(codes.Internal, "internal server error")
 			}
@@ -49,7 +49,6 @@ func RecoveryInterceptor() grpc.UnaryServerInterceptor {
 		return handler(ctx, req)
 	}
 }
-
 
 // Private helper functions
 

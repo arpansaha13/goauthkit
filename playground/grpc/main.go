@@ -30,12 +30,12 @@ func main() {
 	flag.Parse()
 
 	// Initialize zap logger
-	zapLogger, err := zap.NewProduction()
+	otelLogger, err := zap.NewProduction()
 	if err != nil {
 		log.Fatalf("failed to initialize zap logger: %v", err)
 	}
-	defer zapLogger.Sync()
-	zap.ReplaceGlobals(zapLogger)
+	defer otelLogger.Sync()
+	zap.ReplaceGlobals(otelLogger)
 
 	// Load configuration
 	cfg, err := config.Load()
