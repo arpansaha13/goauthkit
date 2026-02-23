@@ -13,13 +13,13 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/arpansaha13/goauthkit/pb"
-	"github.com/arpansaha13/goauthkit/pkg/config"
 	grpccontroller "github.com/arpansaha13/goauthkit/pkg/controller/grpc"
 	grpcmiddleware "github.com/arpansaha13/goauthkit/pkg/middleware/grpc"
 	"github.com/arpansaha13/goauthkit/pkg/repository"
 	"github.com/arpansaha13/goauthkit/pkg/service"
 	"github.com/arpansaha13/goauthkit/pkg/utils"
 	"github.com/arpansaha13/goauthkit/pkg/worker"
+	"github.com/arpansaha13/goauthkit/playground/config"
 )
 
 var (

@@ -8,12 +8,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/arpansaha13/goauthkit/pkg/config"
+	"go.uber.org/zap"
+
 	"github.com/arpansaha13/goauthkit/pkg/repository"
 	"github.com/arpansaha13/goauthkit/pkg/service"
 	"github.com/arpansaha13/goauthkit/pkg/utils"
 	"github.com/arpansaha13/goauthkit/pkg/worker"
-	"go.uber.org/zap"
+	"github.com/arpansaha13/goauthkit/playground/config"
 )
 
 func main() {
