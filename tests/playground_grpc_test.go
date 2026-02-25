@@ -25,6 +25,7 @@ import (
 	pkgservice "github.com/arpansaha13/goauthkit/pkg/service"
 	pkgutils "github.com/arpansaha13/goauthkit/pkg/utils"
 	pkgworker "github.com/arpansaha13/goauthkit/pkg/worker"
+	"github.com/arpansaha13/gotoolkit"
 )
 
 // GRPCPlaygroundTestSuite tests the gRPC playground server using pkg exports
@@ -134,8 +135,8 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 	// Create gRPC server with interceptors
 	s.GRPCServer = grpc.NewServer(
 		grpc.UnaryInterceptor(middleware.ChainUnaryInterceptors(
-			middleware.ErrorInterceptor(),
-			middleware.RecoveryInterceptor(),
+			gotoolkit.GrpcErrorInterceptor(),
+			gotoolkit.GrpcRecoveryInterceptor(),
 			middleware.AuthorizationInterceptor(),
 		)),
 	)

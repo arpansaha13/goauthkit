@@ -15,6 +15,7 @@ import (
 	"github.com/arpansaha13/goauthkit/internal/utils"
 	"github.com/arpansaha13/goauthkit/internal/worker"
 	"github.com/arpansaha13/goauthkit/tests/mocks"
+	"github.com/arpansaha13/gotoolkit"
 )
 
 // MockEmailProvider is a test implementation of EmailProvider
@@ -181,7 +182,7 @@ func TestAuthService_Login(t *testing.T) {
 			mockUserRepo: func() *mocks.MockUserRepository {
 				return &mocks.MockUserRepository{
 					GetByEmailFunc: func(ctx context.Context, email string) (*domain.User, error) {
-						return nil, &domain.NotFoundError{Message: "user not found"}
+						return nil, &gotoolkit.NotFoundError{Message: "user not found"}
 					},
 				}
 			},

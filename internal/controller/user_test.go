@@ -7,10 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/internal/service"
 	"github.com/arpansaha13/goauthkit/pb"
 	"github.com/arpansaha13/goauthkit/tests/mocks"
+	"github.com/arpansaha13/gotoolkit"
 )
 
 // TestGetUserValidation tests request validation for GetUser endpoint
@@ -46,7 +46,7 @@ func TestGetUserValidation(t *testing.T) {
 				UserId: 0,
 			},
 			ExpectedError: true,
-			ErrorType:     (*domain.ValidationError)(nil),
+			ErrorType:     (*gotoolkit.ValidationError)(nil),
 		},
 		{
 			Name: "Negative user ID",
@@ -54,7 +54,7 @@ func TestGetUserValidation(t *testing.T) {
 				UserId: -1,
 			},
 			ExpectedError: true,
-			ErrorType:     (*domain.ValidationError)(nil),
+			ErrorType:     (*gotoolkit.ValidationError)(nil),
 		},
 	}
 
@@ -112,7 +112,7 @@ func TestGetUserByEmailValidation(t *testing.T) {
 				Email: "",
 			},
 			ExpectedError: true,
-			ErrorType:     (*domain.ValidationError)(nil),
+			ErrorType:     (*gotoolkit.ValidationError)(nil),
 		},
 	}
 
@@ -164,7 +164,7 @@ func TestDeleteUserValidation(t *testing.T) {
 				UserId: 0,
 			},
 			ExpectedError: true,
-			ErrorType:     (*domain.ValidationError)(nil),
+			ErrorType:     (*gotoolkit.ValidationError)(nil),
 		},
 		{
 			Name: "Negative user ID",
@@ -172,7 +172,7 @@ func TestDeleteUserValidation(t *testing.T) {
 				UserId: -1,
 			},
 			ExpectedError: true,
-			ErrorType:     (*domain.ValidationError)(nil),
+			ErrorType:     (*gotoolkit.ValidationError)(nil),
 		},
 	}
 
@@ -214,11 +214,11 @@ func TestGetUserErrorHandling(t *testing.T) {
 			Request: &pb.GetUserRequest{
 				UserId: 999,
 			},
-			ServiceError:  &domain.NotFoundError{Message: "user not found"},
+			ServiceError:  &gotoolkit.NotFoundError{Message: "user not found"},
 			ExpectedError: true,
-			ErrorType:     (*domain.NotFoundError)(nil),
+			ErrorType:     (*gotoolkit.NotFoundError)(nil),
 			MockFunc: func(ctx context.Context, req service.GetUserRequest) (*service.GetUserResponse, error) {
-				return nil, &domain.NotFoundError{Message: "user not found"}
+				return nil, &gotoolkit.NotFoundError{Message: "user not found"}
 			},
 		},
 		{
@@ -226,11 +226,11 @@ func TestGetUserErrorHandling(t *testing.T) {
 			Request: &pb.GetUserRequest{
 				UserId: 1,
 			},
-			ServiceError:  &domain.InternalError{Message: "database connection failed"},
+			ServiceError:  &gotoolkit.InternalError{Message: "database connection failed"},
 			ExpectedError: true,
-			ErrorType:     (*domain.InternalError)(nil),
+			ErrorType:     (*gotoolkit.InternalError)(nil),
 			MockFunc: func(ctx context.Context, req service.GetUserRequest) (*service.GetUserResponse, error) {
-				return nil, &domain.InternalError{Message: "database connection failed"}
+				return nil, &gotoolkit.InternalError{Message: "database connection failed"}
 			},
 		},
 	}

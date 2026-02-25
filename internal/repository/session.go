@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/arpansaha13/goauthkit/internal/domain"
+	"github.com/arpansaha13/gotoolkit"
 )
 
 // SessionRepository handles session-related database operations
@@ -34,9 +35,9 @@ func (r *SessionRepository) GetByTokenHash(ctx context.Context, tokenHash string
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &domain.NotFoundError{Message: "session not found"}
+			return nil, &gotoolkit.NotFoundError{Message: "session not found"}
 		}
-		return nil, &domain.InternalError{Message: "failed to get session", Err: err}
+		return nil, &gotoolkit.InternalError{Message: "failed to get session", Err: err}
 	}
 
 	return &session, nil
@@ -50,7 +51,7 @@ func (r *SessionRepository) GetByUserID(ctx context.Context, userID int64) ([]do
 		Find(&sessions).Error
 
 	if err != nil {
-		return nil, &domain.InternalError{Message: "failed to get sessions", Err: err}
+		return nil, &gotoolkit.InternalError{Message: "failed to get sessions", Err: err}
 	}
 
 	return sessions, nil
@@ -102,7 +103,7 @@ func (r *SessionRepository) IsTokenValid(ctx context.Context, tokenHash string) 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, 0, nil
 		}
-		return false, 0, &domain.InternalError{Message: "failed to validate token", Err: err}
+		return false, 0, &gotoolkit.InternalError{Message: "failed to validate token", Err: err}
 	}
 
 	return true, session.UserID, nil

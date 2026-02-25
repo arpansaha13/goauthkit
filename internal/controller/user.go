@@ -5,9 +5,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/internal/service"
 	"github.com/arpansaha13/goauthkit/pb"
+	"github.com/arpansaha13/gotoolkit"
 	"github.com/arpansaha13/gotoolkit/logger"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -100,21 +100,21 @@ func (s *AuthServiceImpl) DeleteUser(ctx context.Context, req *pb.DeleteUserRequ
 
 func (s *AuthServiceImpl) validateGetUserRequest(req *pb.GetUserRequest) error {
 	if req.UserId <= 0 {
-		return &domain.ValidationError{Message: "user_id must be greater than zero", Field: "user_id"}
+		return &gotoolkit.ValidationError{Message: "user_id must be greater than zero", Field: "user_id"}
 	}
 	return nil
 }
 
 func (s *AuthServiceImpl) validateGetUserByEmailRequest(req *pb.GetUserByEmailRequest) error {
 	if req.Email == "" {
-		return &domain.ValidationError{Message: "email is required", Field: "email"}
+		return &gotoolkit.ValidationError{Message: "email is required", Field: "email"}
 	}
 	return nil
 }
 
 func (s *AuthServiceImpl) validateDeleteUserRequest(req *pb.DeleteUserRequest) error {
 	if req.UserId <= 0 {
-		return &domain.ValidationError{Message: "user_id must be greater than zero", Field: "user_id"}
+		return &gotoolkit.ValidationError{Message: "user_id must be greater than zero", Field: "user_id"}
 	}
 	return nil
 }

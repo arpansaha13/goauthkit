@@ -14,12 +14,12 @@ import (
 
 	"github.com/arpansaha13/goauthkit/pb"
 	grpccontroller "github.com/arpansaha13/goauthkit/pkg/controller/grpc"
-	grpcmiddleware "github.com/arpansaha13/goauthkit/pkg/middleware/grpc"
 	"github.com/arpansaha13/goauthkit/pkg/repository"
 	"github.com/arpansaha13/goauthkit/pkg/service"
 	"github.com/arpansaha13/goauthkit/pkg/utils"
 	"github.com/arpansaha13/goauthkit/pkg/worker"
 	"github.com/arpansaha13/goauthkit/playground/config"
+	"github.com/arpansaha13/gotoolkit"
 )
 
 var (
@@ -104,7 +104,7 @@ func main() {
 
 	// Create gRPC server
 	opts := []grpc.ServerOption{
-		grpc.UnaryInterceptor(grpcmiddleware.ErrorInterceptor()),
+		grpc.UnaryInterceptor(gotoolkit.GrpcErrorInterceptor()),
 	}
 	grpcServer := grpc.NewServer(opts...)
 

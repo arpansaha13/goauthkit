@@ -8,10 +8,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/internal/service"
 	"github.com/arpansaha13/goauthkit/internal/utils"
 	"github.com/arpansaha13/goauthkit/pb"
+	"github.com/arpansaha13/gotoolkit"
 	"github.com/arpansaha13/gotoolkit/logger"
 )
 
@@ -236,68 +236,68 @@ func (s *AuthServiceImpl) ResetPassword(ctx context.Context, req *pb.ResetPasswo
 
 func (s *AuthServiceImpl) validateSignupRequest(req *pb.SignupRequest) error {
 	if req.Email == "" {
-		return &domain.ValidationError{Message: "email is required", Field: "email"}
+		return &gotoolkit.ValidationError{Message: "email is required", Field: "email"}
 	}
 	if req.Password == "" {
-		return &domain.ValidationError{Message: "password is required", Field: "password"}
+		return &gotoolkit.ValidationError{Message: "password is required", Field: "password"}
 	}
 	if err := s.validator.ValidateEmail(req.Email); err != nil {
-		return &domain.ValidationError{Message: err.Error(), Field: "email"}
+		return &gotoolkit.ValidationError{Message: err.Error(), Field: "email"}
 	}
 	if err := s.validator.ValidatePassword(req.Password); err != nil {
-		return &domain.ValidationError{Message: err.Error(), Field: "password"}
+		return &gotoolkit.ValidationError{Message: err.Error(), Field: "password"}
 	}
 	return nil
 }
 
 func (s *AuthServiceImpl) validateVerifyOTPRequest(req *pb.VerifyOTPRequest) error {
 	if req.OtpHash == "" {
-		return &domain.ValidationError{Message: "otp_hash is required", Field: "otp_hash"}
+		return &gotoolkit.ValidationError{Message: "otp_hash is required", Field: "otp_hash"}
 	}
 	if req.Code == "" {
-		return &domain.ValidationError{Message: "code is required", Field: "code"}
+		return &gotoolkit.ValidationError{Message: "code is required", Field: "code"}
 	}
 	return nil
 }
 
 func (s *AuthServiceImpl) validateLoginRequest(req *pb.LoginRequest) error {
 	if req.Email == "" {
-		return &domain.ValidationError{Message: "email is required", Field: "email"}
+		return &gotoolkit.ValidationError{Message: "email is required", Field: "email"}
 	}
 	if req.Password == "" {
-		return &domain.ValidationError{Message: "password is required", Field: "password"}
+		return &gotoolkit.ValidationError{Message: "password is required", Field: "password"}
 	}
 	if err := s.validator.ValidateEmail(req.Email); err != nil {
-		return &domain.ValidationError{Message: err.Error(), Field: "email"}
+		return &gotoolkit.ValidationError{Message: err.Error(), Field: "email"}
 	}
 	return nil
 }
 
 func (s *AuthServiceImpl) validateForgotPasswordRequest(req *pb.ForgotPasswordRequest) error {
 	if req.Email == "" {
-		return &domain.ValidationError{Message: "email is required", Field: "email"}
+		return &gotoolkit.ValidationError{Message: "email is required", Field: "email"}
 	}
 	if err := s.validator.ValidateEmail(req.Email); err != nil {
-		return &domain.ValidationError{Message: err.Error(), Field: "email"}
+		return &gotoolkit.ValidationError{Message: err.Error(), Field: "email"}
 	}
 	return nil
 }
 
 func (s *AuthServiceImpl) validateResetPasswordRequest(req *pb.ResetPasswordRequest) error {
 	if req.OtpHash == "" {
-		return &domain.ValidationError{Message: "otp_hash is required", Field: "otp_hash"}
+		return &gotoolkit.ValidationError{Message: "otp_hash is required", Field: "otp_hash"}
 	}
 	if req.Code == "" {
-		return &domain.ValidationError{Message: "code is required", Field: "code"}
+		return &gotoolkit.ValidationError{Message: "code is required", Field: "code"}
 	}
 	if req.Password == "" {
-		return &domain.ValidationError{Message: "password is required", Field: "password"}
+		return &gotoolkit.ValidationError{Message: "password is required", Field: "password"}
 	}
 	if err := s.validator.ValidateOTPCode(req.Code, 6); err != nil {
-		return &domain.ValidationError{Message: err.Error(), Field: "code"}
+		return &gotoolkit.ValidationError{Message: err.Error(), Field: "code"}
 	}
 	if err := s.validator.ValidatePassword(req.Password); err != nil {
-		return &domain.ValidationError{Message: err.Error(), Field: "password"}
+		return &gotoolkit.ValidationError{Message: err.Error(), Field: "password"}
 	}
 	return nil
 }
