@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"gorm.io/gorm"
-
 	utils_internal "github.com/arpansaha13/goauthkit/internal/utils"
 )
 
@@ -15,14 +13,6 @@ func NewPasswordHasher() *PasswordHasher {
 
 func NewValidator() *Validator {
 	return utils_internal.NewValidator()
-}
-
-func InitDB(dsn string) (*gorm.DB, error) {
-	return utils_internal.InitDB(dsn)
-}
-
-func CloseDB(db *gorm.DB) error {
-	return utils_internal.CloseDB(db)
 }
 
 func GenerateOTP(length int) (string, error) {
