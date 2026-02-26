@@ -16,7 +16,7 @@ import (
 func (s *AuthServiceImpl) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
 	// Validate request
 	if err := s.validateGetUserRequest(req); err != nil {
-		logger.FromContext(ctx).Ctx(ctx).Warn("get user validation error", zap.Error(err))
+		logger.FromContext(ctx).Warn("get user validation error", zap.Error(err))
 		return nil, err
 	}
 
@@ -27,7 +27,7 @@ func (s *AuthServiceImpl) GetUser(ctx context.Context, req *pb.GetUserRequest) (
 
 	resp, err := s.authService.GetUser(ctx, serviceReq)
 	if err != nil {
-		logger.FromContext(ctx).Ctx(ctx).Error("get user error", zap.Error(err))
+		logger.FromContext(ctx).Error("get user error", zap.Error(err))
 		return nil, err
 	}
 
@@ -46,7 +46,7 @@ func (s *AuthServiceImpl) GetUser(ctx context.Context, req *pb.GetUserRequest) (
 func (s *AuthServiceImpl) GetUserByEmail(ctx context.Context, req *pb.GetUserByEmailRequest) (*pb.GetUserByEmailResponse, error) {
 	// Validate request
 	if err := s.validateGetUserByEmailRequest(req); err != nil {
-		logger.FromContext(ctx).Ctx(ctx).Warn("get user by email validation error", zap.Error(err))
+		logger.FromContext(ctx).Warn("get user by email validation error", zap.Error(err))
 		return nil, err
 	}
 
@@ -57,7 +57,7 @@ func (s *AuthServiceImpl) GetUserByEmail(ctx context.Context, req *pb.GetUserByE
 
 	resp, err := s.authService.GetUserByEmail(ctx, serviceReq)
 	if err != nil {
-		logger.FromContext(ctx).Ctx(ctx).Error("get user by email error", zap.Error(err))
+		logger.FromContext(ctx).Error("get user by email error", zap.Error(err))
 		return nil, err
 	}
 
@@ -76,7 +76,7 @@ func (s *AuthServiceImpl) GetUserByEmail(ctx context.Context, req *pb.GetUserByE
 func (s *AuthServiceImpl) DeleteUser(ctx context.Context, req *pb.DeleteUserRequest) (*pb.DeleteUserResponse, error) {
 	// Validate request
 	if err := s.validateDeleteUserRequest(req); err != nil {
-		logger.FromContext(ctx).Ctx(ctx).Warn("delete user validation error", zap.Error(err))
+		logger.FromContext(ctx).Warn("delete user validation error", zap.Error(err))
 		return nil, err
 	}
 
@@ -87,7 +87,7 @@ func (s *AuthServiceImpl) DeleteUser(ctx context.Context, req *pb.DeleteUserRequ
 
 	resp, err := s.authService.DeleteUser(ctx, serviceReq)
 	if err != nil {
-		logger.FromContext(ctx).Ctx(ctx).Error("delete user error", zap.Error(err))
+		logger.FromContext(ctx).Error("delete user error", zap.Error(err))
 		return nil, err
 	}
 

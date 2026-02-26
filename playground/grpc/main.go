@@ -102,9 +102,12 @@ func main() {
 		},
 	)
 
-	// Create gRPC server
+	// Create gRPC server with chained interceptors
 	opts := []grpc.ServerOption{
-		grpc.UnaryInterceptor(gotoolkit.GrpcErrorInterceptor()),
+		grpc.ChainUnaryInterceptor(
+			gotoolkit.GrpcRecoveryInterceptor(),
+			gotoolkit.GrpcErrorInterceptor(),
+		),
 	}
 	grpcServer := grpc.NewServer(opts...)
 

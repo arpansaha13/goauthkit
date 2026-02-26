@@ -15,6 +15,7 @@ import (
 	"github.com/arpansaha13/goauthkit/pkg/utils"
 	"github.com/arpansaha13/goauthkit/pkg/worker"
 	"github.com/arpansaha13/goauthkit/playground/config"
+	"github.com/arpansaha13/gotoolkit"
 )
 
 func main() {
@@ -130,11 +131,16 @@ func main() {
 		fmt.Fprintf(w, `{"status":"ok"}`)
 	})
 
+	// Wrap mux with middleware chain
+	var handler http.Handler = mux
+	handler = gotoolkit.HttpErrorMiddleware(handler)
+	handler = gotoolkit.HttpRecoveryMiddleware(handler)
+
 	// Server setup
 	port := ":8080"
 	server := &http.Server{
 		Addr:    port,
-		Handler: mux,
+		Handler: handler,
 	}
 
 	// Start server in goroutine
