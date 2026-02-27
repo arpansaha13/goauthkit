@@ -10,10 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/arpansaha13/goauthkit/pkg/repository"
-	"github.com/arpansaha13/goauthkit/pkg/service"
-	"github.com/arpansaha13/goauthkit/pkg/utils"
-	"github.com/arpansaha13/goauthkit/pkg/worker"
+	"github.com/arpansaha13/goauthkit/pkg"
 	"github.com/arpansaha13/goauthkit/playground/config"
 	"github.com/arpansaha13/gotoolkit"
 )
@@ -36,25 +33,25 @@ func main() {
 	log.Printf("Starting auth service (HTTP) in %s environment", cfg.Environment)
 
 	// Initialize database
-	db, err := utils.InitDB(cfg.DatabaseURL)
+	db, err := pkg.InitDB(cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer func() {
-		if err := utils.CloseDB(db); err != nil {
+		if err := pkg.CloseDB(db); err != nil {
 			log.Printf("Error closing database: %v", err)
 		}
 	}()
 
 	// Initialize repositories
-	userRepo := repository.NewUserRepository(db)
-	otpRepo := repository.NewOTPRepository(db)
-	sessionRepo := repository.NewSessionRepository(db)
+	userRepo := pkg.NewUserRepository(db)
+	otpRepo := pkg.NewOTPRepository(db)
+	sessionRepo := pkg.NewSessionRepository(db)
 
 	// Initialize email provider
-	var emailProvider worker.EmailProvider
+	var emailProvider pkg.EmailProvider
 	if cfg.Environment == "production" {
-		emailProvider = worker.NewSMTPEmailProvider(
+		emailProvider = pkg.NewSMTPEmailProvider(
 			cfg.SMTPHost,
 			cfg.SMTPPort,
 			cfg.SMTPUser,
@@ -62,15 +59,15 @@ func main() {
 			cfg.EmailFrom,
 		)
 	} else {
-		emailProvider = worker.NewMockEmailProvider()
+		emailProvider = pkg.NewMockEmailProvider()
 	}
 
 	// Initialize password hasher and validator
-	hasher := utils.NewPasswordHasher()
-	validator := utils.NewValidator()
+	hasher := pkg.NewPasswordHasher()
+	validator := pkg.NewValidator()
 
 	// Initialize email worker pool
-	emailPool := worker.NewEmailWorkerPool(
+	emailPool := pkg.NewEmailWorkerPool(
 		cfg.EmailWorkerPoolSize,
 		cfg.EmailTaskQueueSize,
 		emailProvider,
@@ -78,12 +75,12 @@ func main() {
 	defer emailPool.Stop()
 
 	// Initialize auth service
-	authService := service.NewAuthService(
+	authService := pkg.NewAuthService(
 		userRepo,
 		otpRepo,
 		sessionRepo,
 		hasher,
-		service.AuthServiceConfig{
+		pkg.AuthServiceConfig{
 			OTPExpiry:  cfg.OTPExpiry,
 			OTPLength:  cfg.OTPLength,
 			SessionTTL: cfg.SessionTTL,
@@ -165,37 +162,37 @@ func main() {
 }
 
 // Handler stubs - these will be implemented with proper HTTP request/response handling
-func signupHandler(w http.ResponseWriter, r *http.Request, authService service.IAuthService, validator *utils.Validator) {
+func signupHandler(w http.ResponseWriter, r *http.Request, authService pkg.IAuthService, validator *pkg.Validator) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"message":"signup handler"}`)
 }
 
-func verifyOTPHandler(w http.ResponseWriter, r *http.Request, authService service.IAuthService, validator *utils.Validator) {
+func verifyOTPHandler(w http.ResponseWriter, r *http.Request, authService pkg.IAuthService, validator *pkg.Validator) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"message":"verify otp handler"}`)
 }
 
-func loginHandler(w http.ResponseWriter, r *http.Request, authService service.IAuthService, validator *utils.Validator) {
+func loginHandler(w http.ResponseWriter, r *http.Request, authService pkg.IAuthService, validator *pkg.Validator) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"message":"login handler"}`)
 }
 
-func logoutHandler(w http.ResponseWriter, r *http.Request, authService service.IAuthService) {
+func logoutHandler(w http.ResponseWriter, r *http.Request, authService pkg.IAuthService) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"message":"logout handler"}`)
 }
 
-func validateSessionHandler(w http.ResponseWriter, r *http.Request, authService service.IAuthService) {
+func validateSessionHandler(w http.ResponseWriter, r *http.Request, authService pkg.IAuthService) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"message":"validate session handler"}`)
 }
 
-func getUserHandler(w http.ResponseWriter, r *http.Request, authService service.IAuthService) {
+func getUserHandler(w http.ResponseWriter, r *http.Request, authService pkg.IAuthService) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"message":"get user handler"}`)
 }
 
-func deleteUserHandler(w http.ResponseWriter, r *http.Request, authService service.IAuthService) {
+func deleteUserHandler(w http.ResponseWriter, r *http.Request, authService pkg.IAuthService) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"message":"delete user handler"}`)
 }

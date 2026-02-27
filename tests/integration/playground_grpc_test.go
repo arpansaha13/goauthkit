@@ -20,11 +20,7 @@ import (
 	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/internal/middleware"
 	"github.com/arpansaha13/goauthkit/pb"
-	grpccontroller "github.com/arpansaha13/goauthkit/pkg/controller/grpc"
-	pkgrepo "github.com/arpansaha13/goauthkit/pkg/repository"
-	pkgservice "github.com/arpansaha13/goauthkit/pkg/service"
-	pkgutils "github.com/arpansaha13/goauthkit/pkg/utils"
-	pkgworker "github.com/arpansaha13/goauthkit/pkg/worker"
+	"github.com/arpansaha13/goauthkit/pkg"
 	"github.com/arpansaha13/gotoolkit"
 )
 
@@ -38,9 +34,9 @@ type GRPCPlaygroundTestSuite struct {
 	GRPCConn      *grpc.ClientConn
 	GRPCListener  net.Listener
 	GRPCServer    *grpc.Server
-	AuthService   pkgservice.IAuthService
-	EmailPool     *pkgworker.EmailWorkerPool
-	EmailProvider *pkgworker.MockEmailProvider
+	AuthService   pkg.IAuthService
+	EmailPool     *pkg.EmailWorkerPool
+	EmailProvider *pkg.MockEmailProvider
 }
 
 // SetupSuite initializes test environment
@@ -142,21 +138,21 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 	)
 
 	// Register auth service using pkg exports (this is how the playground uses the library)
-	userRepo := pkgrepo.NewUserRepository(db)
-	otpRepo := pkgrepo.NewOTPRepository(db)
-	sessionRepo := pkgrepo.NewSessionRepository(db)
-	hasher := pkgutils.NewPasswordHasher()
-	validator := pkgutils.NewValidator()
-	emailProviderInterface := pkgworker.NewMockEmailProvider()
-	s.EmailProvider = emailProviderInterface.(*pkgworker.MockEmailProvider)
-	s.EmailPool = pkgworker.NewEmailWorkerPool(2, 50, emailProviderInterface)
+	userRepo := pkg.NewUserRepository(db)
+	otpRepo := pkg.NewOTPRepository(db)
+	sessionRepo := pkg.NewSessionRepository(db)
+	hasher := pkg.NewPasswordHasher()
+	validator := pkg.NewValidator()
+	emailProviderInterface := pkg.NewMockEmailProvider()
+	s.EmailProvider = emailProviderInterface.(*pkg.MockEmailProvider)
+	s.EmailPool = pkg.NewEmailWorkerPool(2, 50, emailProviderInterface)
 
-	s.AuthService = pkgservice.NewAuthService(
+	s.AuthService = pkg.NewAuthService(
 		userRepo,
 		otpRepo,
 		sessionRepo,
 		hasher,
-		pkgservice.AuthServiceConfig{
+		pkg.AuthServiceConfig{
 			OTPExpiry:  10 * time.Minute,
 			OTPLength:  6,
 			SessionTTL: 30 * time.Minute,
@@ -166,7 +162,7 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 	)
 
 	// Use pkg exports for controller (this demonstrates playground usage)
-	authServiceImpl := grpccontroller.NewAuthServiceImpl(s.AuthService, validator)
+	authServiceImpl := pkg.NewAuthServiceImpl(s.AuthService, validator)
 	pb.RegisterAuthServiceServer(s.GRPCServer, authServiceImpl)
 
 	// Start server in goroutine
@@ -235,7 +231,7 @@ func (s *GRPCPlaygroundTestSuite) TestPlaygroundVerifyOTP() {
 	s.Require().NoError(err)
 
 	// Update OTP with test code
-	hasher := pkgutils.NewPasswordHasher()
+	hasher := pkg.NewPasswordHasher()
 	otpHashCode, _ := hasher.Hash(testOTPCode)
 	err = s.DB.Model(&domain.OTP{}).
 		Where("otp_hash = ?", signupResp.OtpHash).
@@ -264,7 +260,7 @@ func (s *GRPCPlaygroundTestSuite) TestPlaygroundLogin() {
 		Password: testPassword,
 	})
 
-	hasher := pkgutils.NewPasswordHasher()
+	hasher := pkg.NewPasswordHasher()
 	otpHashCode, _ := hasher.Hash(testOTPCode)
 	s.DB.Model(&domain.OTP{}).
 		Where("otp_hash = ?", signupResp.OtpHash).
@@ -295,7 +291,7 @@ func (s *GRPCPlaygroundTestSuite) TestPlaygroundValidateSession() {
 		Password: "password123",
 	})
 
-	hasher := pkgutils.NewPasswordHasher()
+	hasher := pkg.NewPasswordHasher()
 	otpHashCode, _ := hasher.Hash(testOTPCode)
 	s.DB.Model(&domain.OTP{}).
 		Where("otp_hash = ?", signupResp.OtpHash).
@@ -326,7 +322,7 @@ func (s *GRPCPlaygroundTestSuite) TestPlaygroundGetUser() {
 		Password: "password123",
 	})
 
-	hasher := pkgutils.NewPasswordHasher()
+	hasher := pkg.NewPasswordHasher()
 	otpHashCode, _ := hasher.Hash(testOTPCode)
 	s.DB.Model(&domain.OTP{}).
 		Where("otp_hash = ?", signupResp.OtpHash).
@@ -364,7 +360,7 @@ func (s *GRPCPlaygroundTestSuite) TestPlaygroundDeleteUser() {
 		Password: "password123",
 	})
 
-	hasher := pkgutils.NewPasswordHasher()
+	hasher := pkg.NewPasswordHasher()
 	otpHashCode, _ := hasher.Hash(testOTPCode)
 	s.DB.Model(&domain.OTP{}).
 		Where("otp_hash = ?", signupResp.OtpHash).

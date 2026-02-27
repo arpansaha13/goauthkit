@@ -18,10 +18,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/arpansaha13/goauthkit/internal/domain"
-	pkgrepo "github.com/arpansaha13/goauthkit/pkg/repository"
-	pkgservice "github.com/arpansaha13/goauthkit/pkg/service"
-	pkgutils "github.com/arpansaha13/goauthkit/pkg/utils"
-	pkgworker "github.com/arpansaha13/goauthkit/pkg/worker"
+	"github.com/arpansaha13/goauthkit/pkg"
 )
 
 // HTTPPlaygroundTestSuite tests the HTTP playground server using pkg exports
@@ -33,8 +30,8 @@ type HTTPPlaygroundTestSuite struct {
 	HTTPClient  *http.Client
 	HTTPServer  *http.Server
 	ServerAddr  string
-	AuthService pkgservice.IAuthService
-	EmailPool   *pkgworker.EmailWorkerPool
+	AuthService pkg.IAuthService
+	EmailPool   *pkg.EmailWorkerPool
 }
 
 // SetupSuite initializes test environment
@@ -129,19 +126,19 @@ func (s *HTTPPlaygroundTestSuite) setupHTTPServer(ctx context.Context, db *gorm.
 	s.ServerAddr = fmt.Sprintf("http://%s", listener.Addr().String())
 
 	// Initialize services using pkg exports (this is how the playground uses the library)
-	userRepo := pkgrepo.NewUserRepository(db)
-	otpRepo := pkgrepo.NewOTPRepository(db)
-	sessionRepo := pkgrepo.NewSessionRepository(db)
-	hasher := pkgutils.NewPasswordHasher()
-	emailProvider := pkgworker.NewMockEmailProvider()
-	s.EmailPool = pkgworker.NewEmailWorkerPool(2, 50, emailProvider)
+	userRepo := pkg.NewUserRepository(db)
+	otpRepo := pkg.NewOTPRepository(db)
+	sessionRepo := pkg.NewSessionRepository(db)
+	hasher := pkg.NewPasswordHasher()
+	emailProvider := pkg.NewMockEmailProvider()
+	s.EmailPool = pkg.NewEmailWorkerPool(2, 50, emailProvider)
 
-	s.AuthService = pkgservice.NewAuthService(
+	s.AuthService = pkg.NewAuthService(
 		userRepo,
 		otpRepo,
 		sessionRepo,
 		hasher,
-		pkgservice.AuthServiceConfig{
+		pkg.AuthServiceConfig{
 			OTPExpiry:  10 * time.Minute,
 			OTPLength:  6,
 			SessionTTL: 30 * time.Minute,
@@ -200,7 +197,7 @@ func (s *HTTPPlaygroundTestSuite) setupHTTPServer(ctx context.Context, db *gorm.
 
 // Handler implementations
 func (s *HTTPPlaygroundTestSuite) signupHandler(w http.ResponseWriter, r *http.Request) {
-	var req pkgservice.SignupRequest
+	var req pkg.SignupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, `{"error":"invalid request"}`)
@@ -219,7 +216,7 @@ func (s *HTTPPlaygroundTestSuite) signupHandler(w http.ResponseWriter, r *http.R
 }
 
 func (s *HTTPPlaygroundTestSuite) verifyOTPHandler(w http.ResponseWriter, r *http.Request) {
-	var req pkgservice.VerifyOTPRequest
+	var req pkg.VerifyOTPRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, `{"error":"invalid request"}`)
@@ -238,7 +235,7 @@ func (s *HTTPPlaygroundTestSuite) verifyOTPHandler(w http.ResponseWriter, r *htt
 }
 
 func (s *HTTPPlaygroundTestSuite) loginHandler(w http.ResponseWriter, r *http.Request) {
-	var req pkgservice.LoginRequest
+	var req pkg.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, `{"error":"invalid request"}`)
@@ -270,7 +267,7 @@ func (s *HTTPPlaygroundTestSuite) deleteUserHandler(w http.ResponseWriter, r *ht
 
 // TestHTTPPlaygroundSignup tests signup via HTTP
 func (s *HTTPPlaygroundTestSuite) TestHTTPPlaygroundSignup() {
-	payload := pkgservice.SignupRequest{
+	payload := pkg.SignupRequest{
 		Email:    "http@example.com",
 		Password: "securePassword123",
 	}
@@ -285,7 +282,7 @@ func (s *HTTPPlaygroundTestSuite) TestHTTPPlaygroundSignup() {
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusOK, resp.StatusCode)
 
-	var result pkgservice.SignupResponse
+	var result pkg.SignupResponse
 	respBody, _ := io.ReadAll(resp.Body)
 	err = json.Unmarshal(respBody, &result)
 	s.Require().NoError(err)
@@ -297,7 +294,7 @@ func (s *HTTPPlaygroundTestSuite) TestHTTPPlaygroundVerifyOTP() {
 	testOTPCode := "123456"
 
 	// First signup
-	signupPayload := pkgservice.SignupRequest{
+	signupPayload := pkg.SignupRequest{
 		Email:    "httpverify@example.com",
 		Password: "securePassword123",
 	}
@@ -308,19 +305,19 @@ func (s *HTTPPlaygroundTestSuite) TestHTTPPlaygroundVerifyOTP() {
 		bytes.NewReader(body),
 	)
 
-	var signupResult pkgservice.SignupResponse
+	var signupResult pkg.SignupResponse
 	respBody, _ := io.ReadAll(resp.Body)
 	json.Unmarshal(respBody, &signupResult)
 
 	// Update OTP with test code
-	hasher := pkgutils.NewPasswordHasher()
+	hasher := pkg.NewPasswordHasher()
 	otpHashCode, _ := hasher.Hash(testOTPCode)
 	s.DB.Model(&domain.OTP{}).
 		Where("otp_hash = ?", signupResult.OTPHash).
 		Update("hashed_code", otpHashCode)
 
 	// Verify OTP
-	verifyPayload := pkgservice.VerifyOTPRequest{
+	verifyPayload := pkg.VerifyOTPRequest{
 		OTPHash: signupResult.OTPHash,
 		Code:    testOTPCode,
 	}
@@ -334,7 +331,7 @@ func (s *HTTPPlaygroundTestSuite) TestHTTPPlaygroundVerifyOTP() {
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusOK, resp.StatusCode)
 
-	var verifyResult pkgservice.VerifyOTPResponse
+	var verifyResult pkg.VerifyOTPResponse
 	respBody, _ = io.ReadAll(resp.Body)
 	err = json.Unmarshal(respBody, &verifyResult)
 	s.Require().NoError(err)
@@ -348,7 +345,7 @@ func (s *HTTPPlaygroundTestSuite) TestHTTPPlaygroundLogin() {
 	testPassword := "password123"
 
 	// Signup
-	signupPayload := pkgservice.SignupRequest{
+	signupPayload := pkg.SignupRequest{
 		Email:    testEmail,
 		Password: testPassword,
 	}
@@ -359,18 +356,18 @@ func (s *HTTPPlaygroundTestSuite) TestHTTPPlaygroundLogin() {
 		bytes.NewReader(body),
 	)
 
-	var signupResult pkgservice.SignupResponse
+	var signupResult pkg.SignupResponse
 	respBody, _ := io.ReadAll(resp.Body)
 	json.Unmarshal(respBody, &signupResult)
 
 	// Update OTP and verify
-	hasher := pkgutils.NewPasswordHasher()
+	hasher := pkg.NewPasswordHasher()
 	otpHashCode, _ := hasher.Hash(testOTPCode)
 	s.DB.Model(&domain.OTP{}).
 		Where("otp_hash = ?", signupResult.OTPHash).
 		Update("hashed_code", otpHashCode)
 
-	verifyPayload := pkgservice.VerifyOTPRequest{
+	verifyPayload := pkg.VerifyOTPRequest{
 		OTPHash: signupResult.OTPHash,
 		Code:    testOTPCode,
 	}
@@ -382,7 +379,7 @@ func (s *HTTPPlaygroundTestSuite) TestHTTPPlaygroundLogin() {
 	)
 
 	// Login
-	loginPayload := pkgservice.LoginRequest{
+	loginPayload := pkg.LoginRequest{
 		Email:    testEmail,
 		Password: testPassword,
 	}
@@ -396,7 +393,7 @@ func (s *HTTPPlaygroundTestSuite) TestHTTPPlaygroundLogin() {
 	s.Require().NoError(err)
 	s.Require().Equal(http.StatusOK, resp.StatusCode)
 
-	var loginResult pkgservice.LoginResponse
+	var loginResult pkg.LoginResponse
 	respBody, _ = io.ReadAll(resp.Body)
 	err = json.Unmarshal(respBody, &loginResult)
 	s.Require().NoError(err)
@@ -419,7 +416,7 @@ func (s *HTTPPlaygroundTestSuite) TestHTTPPlaygroundHealth() {
 // TestHTTPPlaygroundDuplicateSignup tests duplicate signup
 func (s *HTTPPlaygroundTestSuite) TestHTTPPlaygroundDuplicateSignup() {
 	// First signup
-	payload := pkgservice.SignupRequest{
+	payload := pkg.SignupRequest{
 		Email:    "httpduplicate@example.com",
 		Password: "password123",
 	}

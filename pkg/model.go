@@ -1,10 +1,14 @@
-package domain
+package pkg
 
 import (
 	"time"
 
 	"gorm.io/gorm"
 )
+
+// ============================================================================
+// Domain Models
+// ============================================================================
 
 // User represents the users table
 type User struct {
