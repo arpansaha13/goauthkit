@@ -3,8 +3,9 @@ module github.com/arpansaha13/goauthkit
 go 1.25.6
 
 require (
-	github.com/arpansaha13/gotoolkit v0.7.0
+	github.com/arpansaha13/gotoolkit v0.8.0
 	github.com/go-playground/validator/v10 v10.30.1
+	github.com/sony/gobreaker/v2 v2.4.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 	go.uber.org/zap v1.27.1

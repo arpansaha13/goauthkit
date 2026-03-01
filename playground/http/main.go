@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/sony/gobreaker/v2"
 	"go.uber.org/zap"
 
 	"github.com/arpansaha13/goauthkit/pkg"
@@ -43,10 +44,15 @@ func main() {
 		}
 	}()
 
+	// Initialize circuit breaker for playground
+	cb := gobreaker.NewCircuitBreaker[any](gobreaker.Settings{
+		Name: "playground-postgres",
+	})
+
 	// Initialize repositories
-	userRepo := pkg.NewUserRepository(db)
-	otpRepo := pkg.NewOTPRepository(db)
-	sessionRepo := pkg.NewSessionRepository(db)
+	userRepo := pkg.NewUserRepository(db, cb)
+	otpRepo := pkg.NewOTPRepository(db, cb)
+	sessionRepo := pkg.NewSessionRepository(db, cb)
 
 	// Initialize email provider
 	var emailProvider pkg.EmailProvider
