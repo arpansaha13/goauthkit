@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sony/gobreaker/v2"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -126,9 +127,14 @@ func (s *HTTPPlaygroundTestSuite) setupHTTPServer(ctx context.Context, db *gorm.
 	s.ServerAddr = fmt.Sprintf("http://%s", listener.Addr().String())
 
 	// Initialize services using pkg exports (this is how the playground uses the library)
-	userRepo := pkg.NewUserRepository(db)
-	otpRepo := pkg.NewOTPRepository(db)
-	sessionRepo := pkg.NewSessionRepository(db)
+	// Initialize circuit breaker for repositories
+	cb := gobreaker.NewCircuitBreaker[any](gobreaker.Settings{
+		Name: "test-postgres",
+	})
+
+	userRepo := pkg.NewUserRepository(db, cb)
+	otpRepo := pkg.NewOTPRepository(db, cb)
+	sessionRepo := pkg.NewSessionRepository(db, cb)
 	hasher := pkg.NewPasswordHasher()
 	emailProvider := pkg.NewMockEmailProvider()
 	s.EmailPool = pkg.NewEmailWorkerPool(2, 50, emailProvider)

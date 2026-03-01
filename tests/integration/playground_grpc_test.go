@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sony/gobreaker/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -138,9 +139,14 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 	)
 
 	// Register auth service using pkg exports (this is how the playground uses the library)
-	userRepo := pkg.NewUserRepository(db)
-	otpRepo := pkg.NewOTPRepository(db)
-	sessionRepo := pkg.NewSessionRepository(db)
+	// Initialize circuit breaker for repositories
+	cb := gobreaker.NewCircuitBreaker[any](gobreaker.Settings{
+		Name: "test-postgres",
+	})
+
+	userRepo := pkg.NewUserRepository(db, cb)
+	otpRepo := pkg.NewOTPRepository(db, cb)
+	sessionRepo := pkg.NewSessionRepository(db, cb)
 	hasher := pkg.NewPasswordHasher()
 	validator := pkg.NewValidator()
 	emailProviderInterface := pkg.NewMockEmailProvider()
