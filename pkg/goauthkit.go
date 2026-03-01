@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 
+	"github.com/sony/gobreaker/v2"
 	"google.golang.org/grpc"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -157,18 +158,18 @@ type OTPRepository = irepo.OTPRepository
 type SessionRepository = irepo.SessionRepository
 
 // NewUserRepository creates a new user repository
-func NewUserRepository(db *gorm.DB) IUserRepository {
-	return irepo.NewUserRepository(db)
+func NewUserRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) IUserRepository {
+	return irepo.NewUserRepository(db, cb)
 }
 
 // NewOTPRepository creates a new OTP repository
-func NewOTPRepository(db *gorm.DB) IOTPRepository {
-	return irepo.NewOTPRepository(db)
+func NewOTPRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) IOTPRepository {
+	return irepo.NewOTPRepository(db, cb)
 }
 
 // NewSessionRepository creates a new session repository
-func NewSessionRepository(db *gorm.DB) ISessionRepository {
-	return irepo.NewSessionRepository(db)
+func NewSessionRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) ISessionRepository {
+	return irepo.NewSessionRepository(db, cb)
 }
 
 // ============================================================================
