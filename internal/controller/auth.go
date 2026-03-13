@@ -311,3 +311,8 @@ func extractToken(ctx context.Context) string {
 	}
 	return token
 }
+
+// LiveZ is a liveness probe — returns immediately with no side effects.
+func (s *AuthServiceImpl) LiveZ(_ context.Context, _ *pb.LiveZRequest) (*pb.LiveZResponse, error) {
+	return &pb.LiveZResponse{}, nil
+}

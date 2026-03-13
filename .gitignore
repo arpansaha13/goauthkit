@@ -13,3 +13,6 @@ vendor/
 coverage.out
 coverage.html
 data
+
+# MCP
+.serena

@@ -3,7 +3,7 @@ module github.com/arpansaha13/goauthkit
 go 1.25.6
 
 require (
-	github.com/arpansaha13/gotoolkit v0.8.0
+	github.com/arpansaha13/gotoolkit v0.9.1
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/sony/gobreaker/v2 v2.4.0
 	github.com/stretchr/testify v1.11.1
@@ -20,6 +20,7 @@ require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/bradfitz/gomemcache v0.0.0-20250403215159-8d39553ac7cf // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
