@@ -3,11 +3,13 @@ package pkg
 import (
 	"fmt"
 
+	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/sony/gobreaker/v2"
 	"google.golang.org/grpc"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	iccache "github.com/arpansaha13/goauthkit/internal/cache"
 	"github.com/arpansaha13/goauthkit/internal/controller"
 	"github.com/arpansaha13/goauthkit/internal/middleware"
 	irepo "github.com/arpansaha13/goauthkit/internal/repository"
@@ -137,10 +139,11 @@ func NewAuthService(
 	userRepo IUserRepository,
 	otpRepo IOTPRepository,
 	sessionRepo ISessionRepository,
+	sessionCache ISessionCache,
 	hasher *PasswordHasher,
 	config AuthServiceConfig,
 ) IAuthService {
-	return isvc.NewAuthService(userRepo, otpRepo, sessionRepo, hasher, config)
+	return isvc.NewAuthService(userRepo, otpRepo, sessionRepo, sessionCache, hasher, config)
 }
 
 // ============================================================================
@@ -170,6 +173,21 @@ func NewOTPRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) IOTPReposi
 // NewSessionRepository creates a new session repository
 func NewSessionRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) ISessionRepository {
 	return irepo.NewSessionRepository(db, cb)
+}
+
+// ============================================================================
+// Cache Exports
+// ============================================================================
+
+// Interfaces
+type ISessionCache = iccache.ISessionCache
+
+// Cache implementations
+type SessionCache = iccache.SessionCache
+
+// NewSessionCache creates a new session cache backed by memcached
+func NewSessionCache(client *memcache.Client, cb *gobreaker.CircuitBreaker[any]) ISessionCache {
+	return iccache.NewSessionCache(client, cb)
 }
 
 // ============================================================================

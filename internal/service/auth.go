@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/arpansaha13/goauthkit/internal/cache"
 	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/internal/repository"
 	"github.com/arpansaha13/goauthkit/internal/utils"
@@ -18,11 +19,12 @@ import (
 // It provides methods for user registration, email verification, login, session validation, refresh, and logout.
 // All methods are context-aware and handle errors with domain-specific error types.
 type AuthService struct {
-	userRepo    repository.IUserRepository
-	otpRepo     repository.IOTPRepository
-	sessionRepo repository.ISessionRepository
-	hasher      *utils.PasswordHasher
-	config      AuthServiceConfig
+	userRepo     repository.IUserRepository
+	otpRepo      repository.IOTPRepository
+	sessionRepo  repository.ISessionRepository
+	sessionCache cache.ISessionCache // Optional cache layer for sessions (nil-safe)
+	hasher       *utils.PasswordHasher
+	config       AuthServiceConfig
 }
 
 // AuthServiceConfig holds configuration for the auth service
@@ -36,19 +38,22 @@ type AuthServiceConfig struct {
 
 // NewAuthService creates a new auth service with all dependencies initialized.
 // Returns a fully configured AuthService ready for use.
+// sessionCache can be nil, in which case caching is disabled (graceful degradation).
 func NewAuthService(
 	userRepo repository.IUserRepository,
 	otpRepo repository.IOTPRepository,
 	sessionRepo repository.ISessionRepository,
+	sessionCache cache.ISessionCache,
 	hasher *utils.PasswordHasher,
 	config AuthServiceConfig,
 ) *AuthService {
 	return &AuthService{
-		userRepo:    userRepo,
-		otpRepo:     otpRepo,
-		sessionRepo: sessionRepo,
-		hasher:      hasher,
-		config:      config,
+		userRepo:     userRepo,
+		otpRepo:      otpRepo,
+		sessionRepo:  sessionRepo,
+		sessionCache: sessionCache,
+		hasher:       hasher,
+		config:       config,
 	}
 }
 
@@ -295,6 +300,11 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 		return nil, &gotoolkit.InternalError{Message: "failed to create session", Err: err}
 	}
 
+	// Cache the new session (best-effort, failures are non-fatal)
+	if s.sessionCache != nil {
+		_ = s.sessionCache.SetSession(ctx, tokenHash, session, s.config.SessionTTL)
+	}
+
 	return &LoginResponse{
 		SessionToken: sessionToken,
 		ExpiresAt:    expiresAt,
@@ -319,6 +329,21 @@ func (s *AuthService) ValidateSession(ctx context.Context, req ValidateSessionRe
 	}
 
 	tokenHash := s.hashToken(req.Token)
+
+	// Try cache first if available
+	if s.sessionCache != nil {
+		valid, userID, err := s.sessionCache.IsTokenValid(ctx, tokenHash)
+		if err == nil {
+			// Cache hit
+			return &ValidateSessionResponse{
+				UserID: userID,
+				Valid:  valid,
+			}, nil
+		}
+		// Cache miss or error - fall through to repository
+	}
+
+	// Fall back to repository
 	valid, userID, err := s.sessionRepo.IsTokenValid(ctx, tokenHash)
 	if err != nil {
 		return nil, err
@@ -373,6 +398,12 @@ func (s *AuthService) RefreshSession(ctx context.Context, req RefreshSessionRequ
 		return nil, &gotoolkit.InternalError{Message: "failed to update session", Err: err}
 	}
 
+	// Update cache: invalidate old token and cache new token (best-effort)
+	if s.sessionCache != nil {
+		_ = s.sessionCache.InvalidateSessionToken(ctx, tokenHash)
+		_ = s.sessionCache.SetSession(ctx, newTokenHash, session, s.config.SessionTTL)
+	}
+
 	return &RefreshSessionResponse{
 		NewSessionToken: newToken,
 	}, nil
@@ -413,6 +444,11 @@ func (s *AuthService) Logout(ctx context.Context, req LogoutRequest) (*LogoutRes
 	// Soft delete the session
 	if err := s.sessionRepo.SoftDelete(ctx, session.ID); err != nil {
 		return nil, &gotoolkit.InternalError{Message: "failed to logout", Err: err}
+	}
+
+	// Invalidate session in cache (best-effort)
+	if s.sessionCache != nil {
+		_ = s.sessionCache.InvalidateSessionToken(ctx, tokenHash)
 	}
 
 	return &LogoutResponse{

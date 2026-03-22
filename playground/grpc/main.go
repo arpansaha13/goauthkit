@@ -58,6 +58,12 @@ func main() {
 		Name: "playground-postgres",
 	})
 
+	// Initialize session cache (optional - can be nil for database-only mode)
+	var sessionCache pkg.ISessionCache
+	// For now, we skip memcached in playground - pass nil to use database-only mode
+	// To enable memcached: initialize memcache.Client and pass it to pkg.NewSessionCache
+	sessionCache = nil
+
 	// Initialize repositories
 	userRepo := pkg.NewUserRepository(db, cb)
 	otpRepo := pkg.NewOTPRepository(db, cb)
@@ -94,6 +100,7 @@ func main() {
 		userRepo,
 		otpRepo,
 		sessionRepo,
+		sessionCache,
 		hasher,
 		pkg.AuthServiceConfig{
 			OTPExpiry:  cfg.OTPExpiry,
