@@ -143,6 +143,7 @@ func (s *HTTPPlaygroundTestSuite) setupHTTPServer(ctx context.Context, db *gorm.
 		userRepo,
 		otpRepo,
 		sessionRepo,
+		nil,
 		hasher,
 		pkg.AuthServiceConfig{
 			OTPExpiry:  10 * time.Minute,
