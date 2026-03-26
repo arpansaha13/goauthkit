@@ -1,5 +1,5 @@
 -- Main Users Table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     username VARCHAR(100) UNIQUE,
@@ -9,13 +9,13 @@ CREATE TABLE users (
 );
 
 -- Credentials Table (One-to-One)
-CREATE TABLE credentials (
+CREATE TABLE IF NOT EXISTS credentials (
     user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     password_hash VARCHAR(255)
 );
 
 -- OTP Storage
-CREATE TABLE otps (
+CREATE TABLE IF NOT EXISTS otps (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     otp_hash VARCHAR(255) NOT NULL UNIQUE, -- Random hash to identify OTP
@@ -27,7 +27,7 @@ CREATE TABLE otps (
 );
 
 -- Sessions Table
-CREATE TABLE sessions (
+CREATE TABLE IF NOT EXISTS sessions (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token_hash VARCHAR(255) NOT NULL UNIQUE,
@@ -37,9 +37,9 @@ CREATE TABLE sessions (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_username ON users(username);
-CREATE INDEX idx_sessions_token ON sessions(token_hash);
-CREATE INDEX idx_otps_user_id ON otps(user_id);
-CREATE INDEX idx_otps_otp_hash ON otps(otp_hash);
-CREATE INDEX idx_otps_purpose ON otps(purpose);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token_hash);
+CREATE INDEX IF NOT EXISTS idx_otps_user_id ON otps(user_id);
+CREATE INDEX IF NOT EXISTS idx_otps_otp_hash ON otps(otp_hash);
+CREATE INDEX IF NOT EXISTS idx_otps_purpose ON otps(purpose);
