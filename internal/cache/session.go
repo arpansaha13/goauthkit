@@ -16,13 +16,13 @@ import (
 
 // SessionCache implements ISessionCache using memcached as the backend with circuit breaker protection.
 type SessionCache struct {
-	client *memcache.Client
+	client *gotoolkit.MemcachedClient
 	cb     *gobreaker.CircuitBreaker[any]
 }
 
-// NewSessionCache creates a new session cache with memcached backend and circuit breaker.
+// NewSessionCache creates a new session cache with memcached client wrapper and circuit breaker.
 // If either client or circuit breaker is nil, operations become no-ops (graceful degradation).
-func NewSessionCache(client *memcache.Client, cb *gobreaker.CircuitBreaker[any]) *SessionCache {
+func NewSessionCache(client *gotoolkit.MemcachedClient, cb *gobreaker.CircuitBreaker[any]) *SessionCache {
 	return &SessionCache{
 		client: client,
 		cb:     cb,

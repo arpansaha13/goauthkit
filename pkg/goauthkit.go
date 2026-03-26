@@ -3,12 +3,12 @@ package pkg
 import (
 	"fmt"
 
-	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/sony/gobreaker/v2"
 	"google.golang.org/grpc"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"github.com/arpansaha13/gotoolkit"
 	iccache "github.com/arpansaha13/goauthkit/internal/cache"
 	"github.com/arpansaha13/goauthkit/internal/controller"
 	"github.com/arpansaha13/goauthkit/internal/middleware"
@@ -185,8 +185,8 @@ type ISessionCache = iccache.ISessionCache
 // Cache implementations
 type SessionCache = iccache.SessionCache
 
-// NewSessionCache creates a new session cache backed by memcached
-func NewSessionCache(client *memcache.Client, cb *gobreaker.CircuitBreaker[any]) ISessionCache {
+// NewSessionCache creates a new session cache backed by memcached client wrapper
+func NewSessionCache(client *gotoolkit.MemcachedClient, cb *gobreaker.CircuitBreaker[any]) ISessionCache {
 	return iccache.NewSessionCache(client, cb)
 }
 
