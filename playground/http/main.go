@@ -8,12 +8,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/sony/gobreaker/v2"
 	"go.uber.org/zap"
 
 	"github.com/arpansaha13/goauthkit/pkg"
 	"github.com/arpansaha13/goauthkit/playground/config"
-	"github.com/arpansaha13/gotoolkit"
 )
 
 func main() {
@@ -143,8 +143,8 @@ func main() {
 
 	// Wrap mux with middleware chain
 	var handler http.Handler = mux
-	handler = gotoolkit.HttpErrorMiddleware(handler)
-	handler = gotoolkit.HttpRecoveryMiddleware(handler)
+	handler = gtk.HttpErrorMiddleware(handler)
+	handler = gtk.HttpRecoveryMiddleware(handler)
 
 	// Server setup
 	port := ":8080"

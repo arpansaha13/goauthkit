@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/sony/gobreaker/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -22,7 +23,6 @@ import (
 	"github.com/arpansaha13/goauthkit/internal/middleware"
 	"github.com/arpansaha13/goauthkit/pb"
 	"github.com/arpansaha13/goauthkit/pkg"
-	"github.com/arpansaha13/gotoolkit"
 )
 
 // GRPCPlaygroundTestSuite tests the gRPC playground server using pkg exports
@@ -132,8 +132,8 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 	// Create gRPC server with interceptors
 	s.GRPCServer = grpc.NewServer(
 		grpc.UnaryInterceptor(middleware.ChainUnaryInterceptors(
-			gotoolkit.GrpcErrorInterceptor(),
-			gotoolkit.GrpcRecoveryInterceptor(),
+			gtk.GrpcErrorInterceptor(),
+			gtk.GrpcRecoveryInterceptor(),
 			middleware.AuthorizationInterceptor(),
 		)),
 	)

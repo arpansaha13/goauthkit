@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/arpansaha13/goauthkit/internal/service"
 	"github.com/arpansaha13/goauthkit/internal/utils"
 	"github.com/arpansaha13/goauthkit/tests/mocks"
-	"github.com/arpansaha13/gotoolkit"
 )
 
 func TestAuthService_GetUser(t *testing.T) {
@@ -62,7 +62,7 @@ func TestAuthService_GetUser(t *testing.T) {
 			mockUserRepo: func() *mocks.MockUserRepository {
 				return &mocks.MockUserRepository{
 					GetByIDFunc: func(ctx context.Context, id int64) (*domain.User, error) {
-						return nil, &gotoolkit.NotFoundError{Message: "user not found"}
+						return nil, &gtk.NotFoundError{Message: "user not found"}
 					},
 				}
 			},
@@ -149,7 +149,7 @@ func TestAuthService_GetUserByEmail(t *testing.T) {
 			mockUserRepo: func() *mocks.MockUserRepository {
 				return &mocks.MockUserRepository{
 					GetByEmailFunc: func(ctx context.Context, email string) (*domain.User, error) {
-						return nil, &gotoolkit.NotFoundError{Message: "user not found"}
+						return nil, &gtk.NotFoundError{Message: "user not found"}
 					},
 				}
 			},
@@ -237,7 +237,7 @@ func TestAuthService_DeleteUser(t *testing.T) {
 			mockUserRepo: func() *mocks.MockUserRepository {
 				return &mocks.MockUserRepository{
 					GetByIDFunc: func(ctx context.Context, id int64) (*domain.User, error) {
-						return nil, &gotoolkit.NotFoundError{Message: "user not found"}
+						return nil, &gtk.NotFoundError{Message: "user not found"}
 					},
 				}
 			},

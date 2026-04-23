@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/arpansaha13/gotoolkit"
+	"github.com/arpansaha13/gotoolkit/gtk"
 )
 
 // GetUserRequest represents get user input with user ID
@@ -98,7 +98,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, req DeleteUserRequest) (*D
 
 	// Delete user (cascade will handle sessions, otps, credentials)
 	if err := s.userRepo.Delete(ctx, req.UserID); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to delete user", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to delete user", Err: err}
 	}
 
 	return &DeleteUserResponse{Message: "user deleted successfully"}, nil

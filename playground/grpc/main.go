@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/sony/gobreaker/v2"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -16,7 +17,6 @@ import (
 	"github.com/arpansaha13/goauthkit/pb"
 	"github.com/arpansaha13/goauthkit/pkg"
 	"github.com/arpansaha13/goauthkit/playground/config"
-	"github.com/arpansaha13/gotoolkit"
 )
 
 var (
@@ -114,8 +114,8 @@ func main() {
 	// Create gRPC server with chained interceptors
 	opts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
-			gotoolkit.GrpcRecoveryInterceptor(),
-			gotoolkit.GrpcErrorInterceptor(),
+			gtk.GrpcRecoveryInterceptor(),
+			gtk.GrpcErrorInterceptor(),
 		),
 	}
 	grpcServer := grpc.NewServer(opts...)

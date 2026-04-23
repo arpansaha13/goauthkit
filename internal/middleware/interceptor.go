@@ -32,7 +32,6 @@ func AuthorizationInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-
 // Private helper functions
 
 func extractTokenFromMetadata(ctx context.Context) string {

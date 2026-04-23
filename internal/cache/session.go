@@ -7,22 +7,22 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/sony/gobreaker/v2"
 
 	"github.com/arpansaha13/goauthkit/internal/domain"
-	"github.com/arpansaha13/gotoolkit"
 )
 
 // SessionCache implements ISessionCache using memcached as the backend with circuit breaker protection.
 type SessionCache struct {
-	client *gotoolkit.MemcachedClient
+	client *gtk.MemcachedClient
 	cb     *gobreaker.CircuitBreaker[any]
 }
 
 // NewSessionCache creates a new session cache with memcached client wrapper and circuit breaker.
 // If either client or circuit breaker is nil, operations become no-ops (graceful degradation).
-func NewSessionCache(client *gotoolkit.MemcachedClient, cb *gobreaker.CircuitBreaker[any]) *SessionCache {
+func NewSessionCache(client *gtk.MemcachedClient, cb *gobreaker.CircuitBreaker[any]) *SessionCache {
 	return &SessionCache{
 		client: client,
 		cb:     cb,
@@ -32,7 +32,7 @@ func NewSessionCache(client *gotoolkit.MemcachedClient, cb *gobreaker.CircuitBre
 // GetSessionByToken retrieves a full session from cache by token hash.
 func (c *SessionCache) GetSessionByToken(ctx context.Context, tokenHash string) (*domain.Session, error) {
 	if c.client == nil || c.cb == nil {
-		return nil, &gotoolkit.NotFoundError{Message: "cache not available"}
+		return nil, &gtk.NotFoundError{Message: "cache not available"}
 	}
 
 	cacheKey := fmt.Sprintf("session:%s", tokenHash)
@@ -41,7 +41,7 @@ func (c *SessionCache) GetSessionByToken(ctx context.Context, tokenHash string) 
 		item, err := c.client.Get(cacheKey)
 		if err != nil {
 			if errors.Is(err, memcache.ErrCacheMiss) {
-				return nil, &gotoolkit.NotFoundError{Message: "session not found in cache"}
+				return nil, &gtk.NotFoundError{Message: "session not found in cache"}
 			}
 			return nil, err
 		}
@@ -50,17 +50,17 @@ func (c *SessionCache) GetSessionByToken(ctx context.Context, tokenHash string) 
 
 	if err != nil {
 		// If circuit breaker is open or cache miss, return not found
-		if errors.Is(err, &gotoolkit.NotFoundError{}) {
+		if errors.Is(err, &gtk.NotFoundError{}) {
 			return nil, err
 		}
 		// For other errors (network, etc.), return internal error
-		return nil, &gotoolkit.InternalError{Message: "failed to get session from cache", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to get session from cache", Err: err}
 	}
 
 	item := result.(*memcache.Item)
 	var session domain.Session
 	if err := json.Unmarshal(item.Value, &session); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to unmarshal session from cache", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to unmarshal session from cache", Err: err}
 	}
 
 	return &session, nil
@@ -70,7 +70,7 @@ func (c *SessionCache) GetSessionByToken(ctx context.Context, tokenHash string) 
 func (c *SessionCache) IsTokenValid(ctx context.Context, tokenHash string) (bool, int64, error) {
 	if c.client == nil || c.cb == nil {
 		// Cache not available, return cache miss - caller will use database
-		return false, 0, &gotoolkit.NotFoundError{Message: "cache not available"}
+		return false, 0, &gtk.NotFoundError{Message: "cache not available"}
 	}
 
 	cacheKey := fmt.Sprintf("token_valid:%s", tokenHash)
@@ -79,7 +79,7 @@ func (c *SessionCache) IsTokenValid(ctx context.Context, tokenHash string) (bool
 		item, err := c.client.Get(cacheKey)
 		if err != nil {
 			if errors.Is(err, memcache.ErrCacheMiss) {
-				return nil, &gotoolkit.NotFoundError{Message: "token validity not found in cache"}
+				return nil, &gtk.NotFoundError{Message: "token validity not found in cache"}
 			}
 			return nil, err
 		}
@@ -88,11 +88,11 @@ func (c *SessionCache) IsTokenValid(ctx context.Context, tokenHash string) (bool
 
 	if err != nil {
 		// If circuit breaker is open or cache miss, return not found (caller will use DB)
-		if errors.Is(err, &gotoolkit.NotFoundError{}) {
+		if errors.Is(err, &gtk.NotFoundError{}) {
 			return false, 0, err
 		}
 		// For other errors, return internal error
-		return false, 0, &gotoolkit.InternalError{Message: "failed to check token validity in cache", Err: err}
+		return false, 0, &gtk.InternalError{Message: "failed to check token validity in cache", Err: err}
 	}
 
 	item := result.(*memcache.Item)
@@ -102,7 +102,7 @@ func (c *SessionCache) IsTokenValid(ctx context.Context, tokenHash string) (bool
 	}
 
 	if err := json.Unmarshal(item.Value, &data); err != nil {
-		return false, 0, &gotoolkit.InternalError{Message: "failed to unmarshal token validity from cache", Err: err}
+		return false, 0, &gtk.InternalError{Message: "failed to unmarshal token validity from cache", Err: err}
 	}
 
 	return data.Valid, data.UserID, nil

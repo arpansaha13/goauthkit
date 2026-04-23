@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/arpansaha13/goauthkit/internal/utils"
 	"github.com/arpansaha13/goauthkit/pb"
 	"github.com/arpansaha13/goauthkit/tests/mocks"
-	"github.com/arpansaha13/gotoolkit"
 )
 
 // newTestController creates a new AuthServiceImpl with a real validator for testing
@@ -49,7 +49,7 @@ func TestSignupValidation(t *testing.T) {
 				Password: "securePassword123",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 		{
 			Name: "Missing password",
@@ -58,7 +58,7 @@ func TestSignupValidation(t *testing.T) {
 				Password: "",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 		{
 			Name: "Both fields missing",
@@ -67,7 +67,7 @@ func TestSignupValidation(t *testing.T) {
 				Password: "",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 	}
 
@@ -127,7 +127,7 @@ func TestVerifyOTPValidation(t *testing.T) {
 				Code:    "123456",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 		{
 			Name: "Missing OTP code",
@@ -136,7 +136,7 @@ func TestVerifyOTPValidation(t *testing.T) {
 				Code:    "",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 		{
 			Name: "Both fields missing",
@@ -145,7 +145,7 @@ func TestVerifyOTPValidation(t *testing.T) {
 				Code:    "",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 	}
 
@@ -201,7 +201,7 @@ func TestLoginValidation(t *testing.T) {
 				Password: "securePassword123",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 		{
 			Name: "Missing password",
@@ -210,7 +210,7 @@ func TestLoginValidation(t *testing.T) {
 				Password: "",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 		{
 			Name: "Both fields missing",
@@ -219,7 +219,7 @@ func TestLoginValidation(t *testing.T) {
 				Password: "",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 	}
 
@@ -262,11 +262,11 @@ func TestSignupErrorHandling(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "securePassword123",
 			},
-			ServiceError:  &gotoolkit.ConflictError{Message: "email already registered"},
+			ServiceError:  &gtk.ConflictError{Message: "email already registered"},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ConflictError)(nil),
+			ErrorType:     (*gtk.ConflictError)(nil),
 			MockFunc: func(ctx context.Context, req service.SignupRequest) (*service.SignupResponse, error) {
-				return nil, &gotoolkit.ConflictError{Message: "email already registered"}
+				return nil, &gtk.ConflictError{Message: "email already registered"}
 			},
 		},
 		{
@@ -275,11 +275,11 @@ func TestSignupErrorHandling(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "securePassword123",
 			},
-			ServiceError:  &gotoolkit.ValidationError{Message: "invalid email format", Field: "email"},
+			ServiceError:  &gtk.ValidationError{Message: "invalid email format", Field: "email"},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 			MockFunc: func(ctx context.Context, req service.SignupRequest) (*service.SignupResponse, error) {
-				return nil, &gotoolkit.ValidationError{Message: "invalid email format", Field: "email"}
+				return nil, &gtk.ValidationError{Message: "invalid email format", Field: "email"}
 			},
 		},
 		{
@@ -288,11 +288,11 @@ func TestSignupErrorHandling(t *testing.T) {
 				Email:    "test@example.com",
 				Password: "securePassword123",
 			},
-			ServiceError:  &gotoolkit.InternalError{Message: "database error"},
+			ServiceError:  &gtk.InternalError{Message: "database error"},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.InternalError)(nil),
+			ErrorType:     (*gtk.InternalError)(nil),
 			MockFunc: func(ctx context.Context, req service.SignupRequest) (*service.SignupResponse, error) {
-				return nil, &gotoolkit.InternalError{Message: "database error"}
+				return nil, &gtk.InternalError{Message: "database error"}
 			},
 		},
 	}
@@ -343,7 +343,7 @@ func TestForgotPasswordValidation(t *testing.T) {
 				Email: "",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 	}
 
@@ -401,7 +401,7 @@ func TestResetPasswordValidation(t *testing.T) {
 				Password: "newPassword123",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 		{
 			Name: "Invalid OTP code format",
@@ -411,7 +411,7 @@ func TestResetPasswordValidation(t *testing.T) {
 				Password: "newPassword123",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 		{
 			Name: "Password too short",
@@ -421,7 +421,7 @@ func TestResetPasswordValidation(t *testing.T) {
 				Password: "short", // Less than 8 characters
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.ValidationError)(nil),
+			ErrorType:     (*gtk.ValidationError)(nil),
 		},
 		{
 			Name: "Unauthorized - invalid OTP",
@@ -431,9 +431,9 @@ func TestResetPasswordValidation(t *testing.T) {
 				Password: "newPassword123",
 			},
 			ExpectedError: true,
-			ErrorType:     (*gotoolkit.UnauthorizedError)(nil),
+			ErrorType:     (*gtk.UnauthorizedError)(nil),
 			MockFunc: func(ctx context.Context, req service.ResetPasswordRequest) (*service.ResetPasswordResponse, error) {
-				return nil, &gotoolkit.UnauthorizedError{Message: "invalid otp code"}
+				return nil, &gtk.UnauthorizedError{Message: "invalid otp code"}
 			},
 		},
 	}

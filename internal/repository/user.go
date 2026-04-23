@@ -5,11 +5,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/sony/gobreaker/v2"
 	"gorm.io/gorm"
 
 	"github.com/arpansaha13/goauthkit/internal/domain"
-	"github.com/arpansaha13/gotoolkit"
 )
 
 // UserRepository handles user-related database operations
@@ -61,9 +61,9 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &gotoolkit.NotFoundError{Message: "user not found"}
+			return nil, &gtk.NotFoundError{Message: "user not found"}
 		}
-		return nil, &gotoolkit.InternalError{Message: "failed to get user", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to get user", Err: err}
 	}
 
 	return result.(*domain.User), nil
@@ -86,9 +86,9 @@ func (r *UserRepository) GetByID(ctx context.Context, userID int64) (*domain.Use
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &gotoolkit.NotFoundError{Message: "user not found"}
+			return nil, &gtk.NotFoundError{Message: "user not found"}
 		}
-		return nil, &gotoolkit.InternalError{Message: "failed to get user", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to get user", Err: err}
 	}
 
 	return result.(*domain.User), nil
@@ -111,9 +111,9 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*d
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &gotoolkit.NotFoundError{Message: "user not found"}
+			return nil, &gtk.NotFoundError{Message: "user not found"}
 		}
-		return nil, &gotoolkit.InternalError{Message: "failed to get user", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to get user", Err: err}
 	}
 
 	return result.(*domain.User), nil
@@ -171,7 +171,7 @@ func (r *UserRepository) ExistsUsername(ctx context.Context, username string) (b
 	})
 
 	if err != nil {
-		return false, &gotoolkit.InternalError{Message: "failed to check username", Err: err}
+		return false, &gtk.InternalError{Message: "failed to check username", Err: err}
 	}
 
 	return result.(bool), nil
@@ -192,7 +192,7 @@ func (r *UserRepository) ExistsEmail(ctx context.Context, email string) (bool, e
 	})
 
 	if err != nil {
-		return false, &gotoolkit.InternalError{Message: "failed to check email", Err: err}
+		return false, &gtk.InternalError{Message: "failed to check email", Err: err}
 	}
 
 	return result.(bool), nil

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/sony/gobreaker/v2"
 	"gorm.io/gorm"
 
 	"github.com/arpansaha13/goauthkit/internal/domain"
-	"github.com/arpansaha13/gotoolkit"
 )
 
 // OTPRepository handles OTP-related database operations
@@ -46,9 +46,9 @@ func (r *OTPRepository) GetByOTPHash(ctx context.Context, otpHash string, purpos
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &gotoolkit.NotFoundError{Message: "otp not found"}
+			return nil, &gtk.NotFoundError{Message: "otp not found"}
 		}
-		return nil, &gotoolkit.InternalError{Message: "failed to get otp", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to get otp", Err: err}
 	}
 
 	return result.(*domain.OTP), nil
@@ -69,9 +69,9 @@ func (r *OTPRepository) GetByUserIDAndPurpose(ctx context.Context, userID int64,
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &gotoolkit.NotFoundError{Message: "otp not found"}
+			return nil, &gtk.NotFoundError{Message: "otp not found"}
 		}
-		return nil, &gotoolkit.InternalError{Message: "failed to get otp", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to get otp", Err: err}
 	}
 
 	return result.(*domain.OTP), nil

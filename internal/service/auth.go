@@ -12,7 +12,7 @@ import (
 	"github.com/arpansaha13/goauthkit/internal/repository"
 	"github.com/arpansaha13/goauthkit/internal/utils"
 	"github.com/arpansaha13/goauthkit/internal/worker"
-	"github.com/arpansaha13/gotoolkit"
+	"github.com/arpansaha13/gotoolkit/gtk"
 )
 
 // AuthService handles authentication and session management business logic.
@@ -80,13 +80,13 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 		return nil, err
 	}
 	if exists {
-		return nil, &gotoolkit.ConflictError{Message: "email already registered"}
+		return nil, &gtk.ConflictError{Message: "email already registered"}
 	}
 
 	// Hash password
 	passwordHash, err := s.hasher.Hash(req.Password)
 	if err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to process password", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to process password", Err: err}
 	}
 
 	// Create user and credentials in transaction
@@ -100,25 +100,25 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 	}
 
 	if err := s.userRepo.Create(ctx, newUser, credentials); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to create user", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to create user", Err: err}
 	}
 
 	// Generate and send OTP
 	otp, err := utils.GenerateOTP(s.config.OTPLength)
 	if err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to generate otp", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to generate otp", Err: err}
 	}
 
 	// Generate random hash for OTP identification
 	otpHash, err := utils.GenerateToken(32)
 	if err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to generate otp hash", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to generate otp hash", Err: err}
 	}
 
 	// Hash the OTP code for verification
 	hashedCode, err := s.hasher.Hash(otp)
 	if err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to process otp", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to process otp", Err: err}
 	}
 
 	otpRecord := &domain.OTP{
@@ -130,7 +130,7 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 	}
 
 	if err := s.otpRepo.Create(ctx, otpRecord); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to store otp", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to store otp", Err: err}
 	}
 
 	// Enqueue email task with OTP details
@@ -168,7 +168,7 @@ type VerifyOTPResponse struct {
 // Returns error if OTP is invalid, expired, already verified, or validation fails.
 func (s *AuthService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*VerifyOTPResponse, error) {
 	if req.OTPHash == "" {
-		return nil, &gotoolkit.ValidationError{Message: "otp hash is required", Field: "otp_hash"}
+		return nil, &gtk.ValidationError{Message: "otp hash is required", Field: "otp_hash"}
 	}
 
 	// Get OTP by hash and purpose (signup verification)
@@ -187,17 +187,17 @@ func (s *AuthService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*Ver
 
 	// Check if already verified
 	if user.Verified {
-		return nil, &gotoolkit.ValidationError{Message: "user already verified", Field: ""}
+		return nil, &gtk.ValidationError{Message: "user already verified", Field: ""}
 	}
 
 	// Check expiry
 	if time.Now().After(otpRecord.ExpiresAt) {
-		return nil, &gotoolkit.UnauthorizedError{Message: "otp has expired"}
+		return nil, &gtk.UnauthorizedError{Message: "otp has expired"}
 	}
 
 	// Verify OTP hash
 	if !s.hasher.Verify(otpRecord.HashedCode, req.Code) {
-		return nil, &gotoolkit.UnauthorizedError{Message: "invalid otp code"}
+		return nil, &gtk.UnauthorizedError{Message: "invalid otp code"}
 	}
 
 	// Generate username with retry logic
@@ -209,18 +209,18 @@ func (s *AuthService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*Ver
 
 	// Update user as verified and set username in transaction
 	if err := s.userRepo.UpdateVerified(ctx, userID, username); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to update user", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to update user", Err: err}
 	}
 
 	// Delete OTP by hash and purpose
 	if err := s.otpRepo.SoftDeleteByOTPHash(ctx, req.OTPHash, domain.OTPPurposeSignupVerification); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to clean up otp", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to clean up otp", Err: err}
 	}
 
 	// Create session
 	sessionToken, err := utils.GenerateToken(32)
 	if err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to generate session token", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to generate session token", Err: err}
 	}
 
 	tokenHash := s.hashToken(sessionToken)
@@ -231,7 +231,7 @@ func (s *AuthService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*Ver
 	}
 
 	if err := s.sessionRepo.Create(ctx, session); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to create session", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to create session", Err: err}
 	}
 
 	return &VerifyOTPResponse{
@@ -262,20 +262,20 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 	// Get user
 	user, err := s.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
-		if gotoolkit.IsNotFound(err) {
-			return nil, &gotoolkit.UnauthorizedError{Message: "invalid email or password"}
+		if gtk.IsNotFound(err) {
+			return nil, &gtk.UnauthorizedError{Message: "invalid email or password"}
 		}
 		return nil, err
 	}
 
 	// Check if verified
 	if !user.Verified {
-		return nil, &gotoolkit.UnauthorizedError{Message: "email not verified"}
+		return nil, &gtk.UnauthorizedError{Message: "email not verified"}
 	}
 
 	// Verify password
 	if user.Credentials == nil || !s.hasher.Verify(user.Credentials.PasswordHash, req.Password) {
-		return nil, &gotoolkit.UnauthorizedError{Message: "invalid email or password"}
+		return nil, &gtk.UnauthorizedError{Message: "invalid email or password"}
 	}
 
 	// Update last login
@@ -284,7 +284,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 	// Create session
 	sessionToken, err := utils.GenerateToken(32)
 	if err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to generate session token", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to generate session token", Err: err}
 	}
 
 	tokenHash := s.hashToken(sessionToken)
@@ -297,7 +297,7 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 	}
 
 	if err := s.sessionRepo.Create(ctx, session); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to create session", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to create session", Err: err}
 	}
 
 	// Cache the new session (best-effort, failures are non-fatal)
@@ -370,7 +370,7 @@ type RefreshSessionResponse struct {
 // Returns error if token is invalid, expired, or if database update fails.
 func (s *AuthService) RefreshSession(ctx context.Context, req RefreshSessionRequest) (*RefreshSessionResponse, error) {
 	if req.Token == "" {
-		return nil, &gotoolkit.UnauthorizedError{Message: "invalid token"}
+		return nil, &gtk.UnauthorizedError{Message: "invalid token"}
 	}
 
 	tokenHash := s.hashToken(req.Token)
@@ -381,13 +381,13 @@ func (s *AuthService) RefreshSession(ctx context.Context, req RefreshSessionRequ
 
 	// Check if session is still valid
 	if time.Now().After(session.ExpiresAt) {
-		return nil, &gotoolkit.UnauthorizedError{Message: "session expired"}
+		return nil, &gtk.UnauthorizedError{Message: "session expired"}
 	}
 
 	// Generate new token
 	newToken, err := utils.GenerateToken(32)
 	if err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to generate new token", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to generate new token", Err: err}
 	}
 
 	newTokenHash := s.hashToken(newToken)
@@ -395,7 +395,7 @@ func (s *AuthService) RefreshSession(ctx context.Context, req RefreshSessionRequ
 	session.ExpiresAt = time.Now().Add(s.config.SessionTTL)
 
 	if err := s.sessionRepo.Update(ctx, session); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to update session", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to update session", Err: err}
 	}
 
 	// Update cache: invalidate old token and cache new token (best-effort)
@@ -425,7 +425,7 @@ type LogoutResponse struct {
 // Returns error if token is invalid or if soft delete operation fails.
 func (s *AuthService) Logout(ctx context.Context, req LogoutRequest) (*LogoutResponse, error) {
 	if req.Token == "" {
-		return nil, &gotoolkit.UnauthorizedError{Message: "invalid token"}
+		return nil, &gtk.UnauthorizedError{Message: "invalid token"}
 	}
 
 	tokenHash := s.hashToken(req.Token)
@@ -438,12 +438,12 @@ func (s *AuthService) Logout(ctx context.Context, req LogoutRequest) (*LogoutRes
 
 	// Check if session is still valid
 	if time.Now().After(session.ExpiresAt) {
-		return nil, &gotoolkit.UnauthorizedError{Message: "session expired"}
+		return nil, &gtk.UnauthorizedError{Message: "session expired"}
 	}
 
 	// Soft delete the session
 	if err := s.sessionRepo.SoftDelete(ctx, session.ID); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to logout", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to logout", Err: err}
 	}
 
 	// Invalidate session in cache (best-effort)
@@ -475,7 +475,7 @@ func (s *AuthService) ForgotPassword(ctx context.Context, req ForgotPasswordRequ
 	// Get user by email
 	user, err := s.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
-		if gotoolkit.IsNotFound(err) {
+		if gtk.IsNotFound(err) {
 			// Return generic message to avoid email enumeration
 			return &ForgotPasswordResponse{
 				Message: "if email exists, reset link will be sent",
@@ -488,19 +488,19 @@ func (s *AuthService) ForgotPassword(ctx context.Context, req ForgotPasswordRequ
 	// Generate OTP code
 	otp, err := utils.GenerateOTP(s.config.OTPLength)
 	if err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to generate otp", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to generate otp", Err: err}
 	}
 
 	// Generate random hash for OTP identification
 	otpHash, err := utils.GenerateToken(32)
 	if err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to generate otp hash", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to generate otp hash", Err: err}
 	}
 
 	// Hash the OTP code for verification
 	hashedCode, err := s.hasher.Hash(otp)
 	if err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to process otp", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to process otp", Err: err}
 	}
 
 	// Soft delete any existing forgot password OTP for this user
@@ -516,7 +516,7 @@ func (s *AuthService) ForgotPassword(ctx context.Context, req ForgotPasswordRequ
 	}
 
 	if err := s.otpRepo.Create(ctx, otpRecord); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to store otp", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to store otp", Err: err}
 	}
 
 	// Enqueue email task with OTP details
@@ -550,7 +550,7 @@ type ResetPasswordResponse struct {
 // Returns error if OTP is invalid, expired, or password update fails.
 func (s *AuthService) ResetPassword(ctx context.Context, req ResetPasswordRequest) (*ResetPasswordResponse, error) {
 	if req.OTPHash == "" {
-		return nil, &gotoolkit.ValidationError{Message: "otp hash is required", Field: "otp_hash"}
+		return nil, &gtk.ValidationError{Message: "otp hash is required", Field: "otp_hash"}
 	}
 
 	// Get OTP by hash and purpose (forgot password)
@@ -563,28 +563,28 @@ func (s *AuthService) ResetPassword(ctx context.Context, req ResetPasswordReques
 
 	// Check expiry
 	if time.Now().After(otpRecord.ExpiresAt) {
-		return nil, &gotoolkit.UnauthorizedError{Message: "otp has expired"}
+		return nil, &gtk.UnauthorizedError{Message: "otp has expired"}
 	}
 
 	// Verify OTP code
 	if !s.hasher.Verify(otpRecord.HashedCode, req.Code) {
-		return nil, &gotoolkit.UnauthorizedError{Message: "invalid otp code"}
+		return nil, &gtk.UnauthorizedError{Message: "invalid otp code"}
 	}
 
 	// Hash new password
 	newPasswordHash, err := s.hasher.Hash(req.Password)
 	if err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to process password", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to process password", Err: err}
 	}
 
 	// Update password in transaction
 	if err := s.userRepo.UpdatePassword(ctx, userID, newPasswordHash); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to reset password", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to reset password", Err: err}
 	}
 
 	// Soft delete the OTP
 	if err := s.otpRepo.SoftDeleteByOTPHash(ctx, req.OTPHash, domain.OTPPurposeResetPassword); err != nil {
-		return nil, &gotoolkit.InternalError{Message: "failed to clean up otp", Err: err}
+		return nil, &gtk.InternalError{Message: "failed to clean up otp", Err: err}
 	}
 
 	return &ResetPasswordResponse{
@@ -613,7 +613,7 @@ func (s *AuthService) generateUniqueUsername(ctx context.Context, emailPrefix st
 		}
 	}
 
-	return "", &gotoolkit.InternalError{
+	return "", &gtk.InternalError{
 		Message: fmt.Sprintf("failed to generate unique username after %d retries", maxRetries),
 	}
 }
