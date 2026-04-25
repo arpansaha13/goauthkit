@@ -59,8 +59,8 @@ func NewAuthService(
 
 // SignupRequest represents signup input with email and password
 type SignupRequest struct {
-	Email    string // User's email address
-	Password string // User's password (minimum 8 characters)
+	Email    string `json:"email"`    // User's email address
+	Password string `json:"password"` // User's password (minimum 8 characters)
 }
 
 // SignupResponse represents signup output with confirmation message and OTP hash
@@ -149,8 +149,8 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 
 // VerifyOTPRequest represents OTP verification input with OTP hash and OTP code
 type VerifyOTPRequest struct {
-	OTPHash string // Unique OTP hash received during signup
-	Code    string // 6-digit OTP code from email
+	OTPHash string `json:"otp_hash"` // Unique OTP hash received during signup
+	Code    string `json:"code"`     // 6-digit OTP code from email
 }
 
 // VerifyOTPResponse represents OTP verification output with username, OTP hash, and initial session
@@ -162,10 +162,7 @@ type VerifyOTPResponse struct {
 }
 
 // VerifyOTP verifies the OTP code sent to user's email and marks user as verified.
-// Generates a unique username (with collision retry up to 10 times), marks user as verified,
-// soft-deletes the OTP, and creates an initial session token. User can then use this session
-// or login with email/password.
-// Returns error if OTP is invalid, expired, already verified, or validation fails.
+// ...
 func (s *AuthService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*VerifyOTPResponse, error) {
 	if req.OTPHash == "" {
 		return nil, &gtk.ValidationError{Message: "otp hash is required", Field: "otp_hash"}
@@ -244,8 +241,8 @@ func (s *AuthService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*Ver
 
 // LoginRequest represents login input with email and password
 type LoginRequest struct {
-	Email    string // User's email address
-	Password string // User's password
+	Email    string `json:"email"`    // User's email address
+	Password string `json:"password"` // User's password
 }
 
 // LoginResponse represents login output with session token and expiry

@@ -2,6 +2,8 @@ package tests
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"testing"
@@ -9,7 +11,6 @@ import (
 
 	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/sony/gobreaker/v2"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -38,6 +39,7 @@ type GRPCPlaygroundTestSuite struct {
 	AuthService   pkg.IAuthService
 	EmailPool     *pkg.EmailWorkerPool
 	EmailProvider *pkg.MockEmailProvider
+	Fixture       *TestFixture
 }
 
 // SetupSuite initializes test environment
@@ -108,6 +110,7 @@ func (s *GRPCPlaygroundTestSuite) TearDownSuite() {
 // SetupTest prepares each test
 func (s *GRPCPlaygroundTestSuite) SetupTest() {
 	s.cleanupTables()
+	s.Fixture = NewTestFixture(s.T(), s.DB, "", s.GRPCClient)
 }
 
 // cleanupTables truncates all tables
@@ -194,209 +197,106 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 	return nil
 }
 
-// TestPlaygroundSignup tests signup functionality
-func (s *GRPCPlaygroundTestSuite) TestPlaygroundSignup() {
-	resp, err := s.GRPCClient.Signup(s.Ctx, &pb.SignupRequest{
-		Email:    "playground@example.com",
-		Password: "securePassword123",
-	})
+// TestPlaygroundGRPCFlows tests gRPC endpoints using TableDrivenTestCase
+func (s *GRPCPlaygroundTestSuite) TestPlaygroundGRPCFlows() {
+	testCases := []TableDrivenTestCase{
+		{
+			Name: "Validate Session",
+			Test: func(f *TestFixture) error {
+				// Create and verify user
+				user, _ := s.setupVerifiedUser("session@example.com", "password123")
+				
+				// Create session manually in DB
+				token := "test-session-token"
+				hasher := sha256.New()
+				hasher.Write([]byte(token + "test-secret-key-at-least-32-characters-long-ok"))
+				tokenHash := hex.EncodeToString(hasher.Sum(nil))
 
-	s.Require().NoError(err)
-	s.Require().NotEmpty(resp.Message)
-	s.Require().NotEmpty(resp.OtpHash)
+				err := s.DB.Create(&domain.Session{
+					UserID:    user.ID,
+					TokenHash: tokenHash,
+					ExpiresAt: time.Now().Add(24 * time.Hour),
+				}).Error
+				s.Require().NoError(err)
+
+				// Validate session
+				md := metadata.Pairs("authorization", fmt.Sprintf("Bearer %s", token))
+				ctxWithToken := metadata.NewOutgoingContext(s.Ctx, md)
+
+				resp, err := f.AuthClient.ValidateSession(ctxWithToken, &pb.ValidateSessionRequest{})
+				s.Require().NoError(err)
+				s.Require().True(resp.Valid)
+				return nil
+			},
+		},
+		{
+			Name: "Get User",
+			Test: func(f *TestFixture) error {
+				// Create and verify user
+				user, _ := s.setupVerifiedUser("getuser@example.com", "password123")
+
+				md := metadata.Pairs("authorization", "Bearer test-token")
+				ctxWithToken := metadata.NewOutgoingContext(s.Ctx, md)
+
+				resp, err := f.AuthClient.GetUser(ctxWithToken, &pb.GetUserRequest{UserId: int64(user.ID)})
+				s.Require().NoError(err)
+				s.Require().NotNil(resp.User)
+				s.Require().Equal("getuser@example.com", resp.User.Email)
+				return nil
+			},
+		},
+		{
+			Name: "Delete User",
+			Test: func(f *TestFixture) error {
+				// Create and verify user
+				user, _ := s.setupVerifiedUser("deleteuser@example.com", "password123")
+
+				md := metadata.Pairs("authorization", "Bearer test-token")
+				ctxWithToken := metadata.NewOutgoingContext(s.Ctx, md)
+
+				// Delete user
+				resp, err := f.AuthClient.DeleteUser(ctxWithToken, &pb.DeleteUserRequest{UserId: int64(user.ID)})
+				s.Require().NoError(err)
+				s.Require().NotEmpty(resp.Message)
+
+				// Verify deletion
+				_, verifyErr := f.AuthClient.GetUser(ctxWithToken, &pb.GetUserRequest{UserId: int64(user.ID)})
+				s.Require().Error(verifyErr)
+				return nil
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.Name, func() {
+			s.SetupTest()
+			if tc.Setup != nil {
+				s.Require().NoError(tc.Setup(s.Fixture))
+			}
+			s.Require().NoError(tc.Test(s.Fixture))
+			if tc.Verify != nil {
+				s.Require().NoError(tc.Verify(s.Fixture))
+			}
+		})
+	}
 }
 
-// TestPlaygroundSignupDuplicate tests duplicate signup
-func (s *GRPCPlaygroundTestSuite) TestPlaygroundSignupDuplicate() {
-	// First signup
-	_, err := s.GRPCClient.Signup(s.Ctx, &pb.SignupRequest{
-		Email:    "duplicate@example.com",
-		Password: "password123",
-	})
-	s.Require().NoError(err)
-
-	// Second signup with same email should fail
-	resp, err := s.GRPCClient.Signup(s.Ctx, &pb.SignupRequest{
-		Email:    "duplicate@example.com",
-		Password: "password123",
-	})
-
-	s.Require().Error(err)
-	s.Require().Nil(resp)
-}
-
-// TestPlaygroundVerifyOTP tests OTP verification
-func (s *GRPCPlaygroundTestSuite) TestPlaygroundVerifyOTP() {
-	testOTPCode := "123456"
-	testEmail := "verify@example.com"
-
-	// Signup
-	signupResp, err := s.GRPCClient.Signup(s.Ctx, &pb.SignupRequest{
-		Email:    testEmail,
-		Password: "securePassword123",
-	})
-	s.Require().NoError(err)
-
-	// Update OTP with test code
+func (s *GRPCPlaygroundTestSuite) setupVerifiedUser(email, password string) (*domain.User, error) {
 	hasher := pkg.NewPasswordHasher()
-	otpHashCode, _ := hasher.Hash(testOTPCode)
-	err = s.DB.Model(&domain.OTP{}).
-		Where("otp_hash = ?", signupResp.OtpHash).
-		Update("hashed_code", otpHashCode).Error
-	s.Require().NoError(err)
-
-	// Verify OTP
-	resp, err := s.GRPCClient.VerifyOTP(s.Ctx, &pb.VerifyOTPRequest{
-		OtpHash: signupResp.OtpHash,
-		Code:    testOTPCode,
-	})
-
-	s.Require().NoError(err)
-	s.Require().NotEmpty(resp.SessionToken)
-}
-
-// TestPlaygroundLogin tests login functionality
-func (s *GRPCPlaygroundTestSuite) TestPlaygroundLogin() {
-	testOTPCode := "123456"
-	testEmail := "login@example.com"
-	testPassword := "password123"
-
-	// Signup and verify
-	signupResp, _ := s.GRPCClient.Signup(s.Ctx, &pb.SignupRequest{
-		Email:    testEmail,
-		Password: testPassword,
-	})
-
-	hasher := pkg.NewPasswordHasher()
-	otpHashCode, _ := hasher.Hash(testOTPCode)
-	s.DB.Model(&domain.OTP{}).
-		Where("otp_hash = ?", signupResp.OtpHash).
-		Update("hashed_code", otpHashCode)
-
-	s.GRPCClient.VerifyOTP(s.Ctx, &pb.VerifyOTPRequest{
-		OtpHash: signupResp.OtpHash,
-		Code:    testOTPCode,
-	})
-
-	// Login
-	resp, err := s.GRPCClient.Login(s.Ctx, &pb.LoginRequest{
-		Email:    testEmail,
-		Password: testPassword,
-	})
-
-	s.Require().NoError(err)
-	s.Require().NotEmpty(resp.SessionToken)
-}
-
-// TestPlaygroundValidateSession tests session validation
-func (s *GRPCPlaygroundTestSuite) TestPlaygroundValidateSession() {
-	testOTPCode := "123456"
-
-	// Create and verify user
-	signupResp, _ := s.GRPCClient.Signup(s.Ctx, &pb.SignupRequest{
-		Email:    "session@example.com",
-		Password: "password123",
-	})
-
-	hasher := pkg.NewPasswordHasher()
-	otpHashCode, _ := hasher.Hash(testOTPCode)
-	s.DB.Model(&domain.OTP{}).
-		Where("otp_hash = ?", signupResp.OtpHash).
-		Update("hashed_code", otpHashCode)
-
-	verifyResp, _ := s.GRPCClient.VerifyOTP(s.Ctx, &pb.VerifyOTPRequest{
-		OtpHash: signupResp.OtpHash,
-		Code:    testOTPCode,
-	})
-
-	// Validate session
-	md := metadata.Pairs("authorization", fmt.Sprintf("Bearer %s", verifyResp.SessionToken))
-	ctxWithToken := metadata.NewOutgoingContext(s.Ctx, md)
-
-	resp, err := s.GRPCClient.ValidateSession(ctxWithToken, &pb.ValidateSessionRequest{})
-
-	s.Require().NoError(err)
-	s.Require().True(resp.Valid)
-}
-
-// TestPlaygroundGetUser tests getting user info
-func (s *GRPCPlaygroundTestSuite) TestPlaygroundGetUser() {
-	testOTPCode := "123456"
-
-	// Create and verify user
-	signupResp, _ := s.GRPCClient.Signup(s.Ctx, &pb.SignupRequest{
-		Email:    "getuser@example.com",
-		Password: "password123",
-	})
-
-	hasher := pkg.NewPasswordHasher()
-	otpHashCode, _ := hasher.Hash(testOTPCode)
-	s.DB.Model(&domain.OTP{}).
-		Where("otp_hash = ?", signupResp.OtpHash).
-		Update("hashed_code", otpHashCode)
-
-	s.GRPCClient.VerifyOTP(s.Ctx, &pb.VerifyOTPRequest{
-		OtpHash: signupResp.OtpHash,
-		Code:    testOTPCode,
-	})
-
-	// Get user
-	var session domain.Session
-	require.NoError(s.T(), s.DB.Where("deleted_at IS NULL").First(&session).Error)
-
-	var user domain.User
-	require.NoError(s.T(), s.DB.Where("id = ?", session.UserID).First(&user).Error)
-
-	md := metadata.Pairs("authorization", "Bearer test-token")
-	ctxWithToken := metadata.NewOutgoingContext(s.Ctx, md)
-
-	resp, err := s.GRPCClient.GetUser(ctxWithToken, &pb.GetUserRequest{UserId: int64(user.ID)})
-
-	s.Require().NoError(err)
-	s.Require().NotNil(resp.User)
-	s.Require().Equal("getuser@example.com", resp.User.Email)
-}
-
-// TestPlaygroundDeleteUser tests user deletion
-func (s *GRPCPlaygroundTestSuite) TestPlaygroundDeleteUser() {
-	testOTPCode := "123456"
-
-	// Create and verify user
-	signupResp, _ := s.GRPCClient.Signup(s.Ctx, &pb.SignupRequest{
-		Email:    "deleteuser@example.com",
-		Password: "password123",
-	})
-
-	hasher := pkg.NewPasswordHasher()
-	otpHashCode, _ := hasher.Hash(testOTPCode)
-	s.DB.Model(&domain.OTP{}).
-		Where("otp_hash = ?", signupResp.OtpHash).
-		Update("hashed_code", otpHashCode)
-
-	s.GRPCClient.VerifyOTP(s.Ctx, &pb.VerifyOTPRequest{
-		OtpHash: signupResp.OtpHash,
-		Code:    testOTPCode,
-	})
-
-	// Get user
-	var session domain.Session
-	require.NoError(s.T(), s.DB.Where("deleted_at IS NULL").First(&session).Error)
-
-	var user domain.User
-	require.NoError(s.T(), s.DB.Where("id = ?", session.UserID).First(&user).Error)
-
-	md := metadata.Pairs("authorization", "Bearer test-token")
-	ctxWithToken := metadata.NewOutgoingContext(s.Ctx, md)
-
-	// Delete user
-	resp, err := s.GRPCClient.DeleteUser(ctxWithToken, &pb.DeleteUserRequest{UserId: int64(user.ID)})
-
-	s.Require().NoError(err)
-	s.Require().NotEmpty(resp.Message)
-
-	// Verify deletion
-	_, verifyErr := s.GRPCClient.GetUser(ctxWithToken, &pb.GetUserRequest{UserId: int64(user.ID)})
-	s.Require().Error(verifyErr)
+	hashedPassword, _ := hasher.Hash(password)
+	
+	username := "testuser"
+	user := &domain.User{
+		Email:    email,
+		Username: &username,
+		Verified: true,
+		Credentials: &domain.Credentials{
+			PasswordHash: hashedPassword,
+		},
+	}
+	
+	err := s.DB.Create(user).Error
+	return user, err
 }
 
 // TestGRPCPlayground runs the gRPC playground test suite

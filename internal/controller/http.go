@@ -29,7 +29,7 @@ func NewSignupController(authService service.IAuthService, validator *utils.Vali
 		}
 
 		if err := validator.Validate(payload); err != nil {
-			return nil, err
+			return nil, &gtk.ValidationError{Message: err.Error()}
 		}
 
 		req := service.SignupRequest{
@@ -58,7 +58,7 @@ func NewLoginController(authService service.IAuthService, validator *utils.Valid
 		}
 
 		if err := validator.Validate(payload); err != nil {
-			return nil, err
+			return nil, &gtk.ValidationError{Message: err.Error()}
 		}
 
 		req := service.LoginRequest{
@@ -89,7 +89,7 @@ func NewVerifyOTPController(authService service.IAuthService, validator *utils.V
 		}
 
 		if err := validator.Validate(payload); err != nil {
-			return nil, err
+			return nil, &gtk.ValidationError{Message: err.Error()}
 		}
 
 		req := service.VerifyOTPRequest{

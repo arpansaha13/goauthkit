@@ -40,10 +40,11 @@ func TestValidator_ValidateStructs(t *testing.T) {
 			payload VerifyOTPPayload
 			wantErr bool
 		}{
-			{"Valid UUID and 6-digit code", VerifyOTPPayload{UserID: "550e8400-e29b-41d4-a716-446655440000", Code: "123456"}, false},
-			{"Invalid UUID", VerifyOTPPayload{UserID: "not-a-uuid", Code: "123456"}, true},
-			{"Code too short", VerifyOTPPayload{UserID: "550e8400-e29b-41d4-a716-446655440000", Code: "123"}, true},
-			{"Code non-numeric", VerifyOTPPayload{UserID: "550e8400-e29b-41d4-a716-446655440000", Code: "abc123"}, true},
+			{"Valid hex hash and 6-digit code", VerifyOTPPayload{OtpHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "123456"}, false},
+			{"Invalid hash length", VerifyOTPPayload{OtpHash: "not-a-64-char-hex-string", Code: "123456"}, true},
+			{"Invalid hex characters in hash", VerifyOTPPayload{OtpHash: "zz23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "123456"}, true},
+			{"Code too short", VerifyOTPPayload{OtpHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "123"}, true},
+			{"Code non-numeric", VerifyOTPPayload{OtpHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "abc123"}, true},
 		}
 
 		for _, tt := range tests {

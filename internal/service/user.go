@@ -35,10 +35,15 @@ func (s *AuthService) GetUser(ctx context.Context, req GetUserRequest) (*GetUser
 		return nil, err
 	}
 
+	username := ""
+	if user.Username != nil {
+		username = *user.Username
+	}
+
 	userData := UserData{
 		UserID:    user.ID,
 		Email:     user.Email,
-		Username:  *user.Username,
+		Username:  username,
 		Verified:  user.Verified,
 		CreatedAt: user.CreatedAt,
 	}
@@ -65,10 +70,15 @@ func (s *AuthService) GetUserByEmail(ctx context.Context, req GetUserByEmailRequ
 		return nil, err
 	}
 
+	username := ""
+	if user.Username != nil {
+		username = *user.Username
+	}
+
 	userData := UserData{
 		UserID:    user.ID,
 		Email:     user.Email,
-		Username:  *user.Username,
+		Username:  username,
 		Verified:  user.Verified,
 		CreatedAt: user.CreatedAt,
 	}
