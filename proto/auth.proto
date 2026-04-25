@@ -8,18 +8,6 @@ import "google/protobuf/timestamp.proto";
 // AuthService provides authentication and session management operations.
 // It handles user registration, email verification, login, session validation, logout, and password reset.
 service AuthService {
-    // Signup registers a new user with email and password.
-    // Returns user_id and sends verification OTP to email.
-    rpc Signup(SignupRequest) returns (SignupResponse);
-
-    // VerifyOTP verifies the OTP sent to user's email and marks user as verified.
-    // Returns generated username and initial session token.
-    rpc VerifyOTP(VerifyOTPRequest) returns (VerifyOTPResponse);
-
-    // Login authenticates user with email and password.
-    // User must be verified before login. Returns session token with expiry time.
-    rpc Login(LoginRequest) returns (LoginResponse);
-
     // ValidateSession validates an active session token.
     // Token is extracted from request metadata (Authorization header).
     // Returns user_id and validity status.
@@ -29,11 +17,6 @@ service AuthService {
     // Token is extracted from request metadata (Authorization header).
     // Returns a new session token.
     rpc RefreshSession(RefreshSessionRequest) returns (RefreshSessionResponse);
-
-    // Logout soft-deletes the user's session.
-    // Token is extracted from request metadata (Authorization header).
-    // After logout, token becomes invalid.
-    rpc Logout(LogoutRequest) returns (LogoutResponse);
 
     // ForgotPassword initiates password reset by generating and sending OTP to user's email.
     // Returns OTP hash to be used in ResetPassword.

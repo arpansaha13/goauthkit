@@ -65,8 +65,8 @@ type SignupRequest struct {
 
 // SignupResponse represents signup output with confirmation message and OTP hash
 type SignupResponse struct {
-	Message string // Confirmation message ("signup successful, check your email for otp")
-	OTPHash string // Unique OTP hash to be sent back during verification
+	Message string `json:"message"`
+	OTPHash string `json:"otp_hash"`
 }
 
 // Signup registers a new user with email and password.
@@ -155,10 +155,10 @@ type VerifyOTPRequest struct {
 
 // VerifyOTPResponse represents OTP verification output with username, OTP hash, and initial session
 type VerifyOTPResponse struct {
-	Message      string // Confirmation message
-	Username     string // Auto-generated username (email_prefix + 6 random digits)
-	OTPHash      string // OTP hash for reference
-	SessionToken string // Initial session token for immediate authentication
+	Message      string `json:"message"`
+	Username     string `json:"username"`
+	OTPHash      string `json:"otp_hash"`
+	SessionToken string `json:"session_token"`
 }
 
 // VerifyOTP verifies the OTP code sent to user's email and marks user as verified.
@@ -250,8 +250,8 @@ type LoginRequest struct {
 
 // LoginResponse represents login output with session token and expiry
 type LoginResponse struct {
-	SessionToken string    // Valid session token (32-byte hex)
-	ExpiresAt    time.Time // Token expiration time (UTC)
+	SessionToken string    `json:"session_token"`
+	ExpiresAt    time.Time `json:"expires_at"`
 }
 
 // Login authenticates a user with email and password credentials.
@@ -416,7 +416,7 @@ type LogoutRequest struct {
 
 // LogoutResponse represents logout output
 type LogoutResponse struct {
-	Message string
+	Message string `json:"message"`
 }
 
 // Logout soft-deletes the user's current session, making the token invalid for future use.

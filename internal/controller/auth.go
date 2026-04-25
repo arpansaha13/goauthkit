@@ -7,8 +7,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
 	"github.com/arpansaha13/goauthkit/internal/service"
 	"github.com/arpansaha13/goauthkit/internal/utils"
 	"github.com/arpansaha13/goauthkit/pb"
@@ -27,85 +25,6 @@ func NewAuthServiceImpl(authService service.IAuthService, validator *utils.Valid
 		authService: authService,
 		validator:   validator,
 	}
-}
-
-// Signup handles user registration
-func (s *AuthServiceImpl) Signup(ctx context.Context, req *pb.SignupRequest) (*pb.SignupResponse, error) {
-	// Validate request
-	if err := s.validateSignupRequest(req); err != nil {
-		gtk.LoggerFromContext(ctx).Warn("signup validation error", zap.Error(err))
-		return nil, err
-	}
-
-	// Call service
-	serviceReq := service.SignupRequest{
-		Email:    req.Email,
-		Password: req.Password,
-	}
-
-	resp, err := s.authService.Signup(ctx, serviceReq)
-	if err != nil {
-		gtk.LoggerFromContext(ctx).Error("signup error", zap.Error(err))
-		return nil, err
-	}
-
-	return &pb.SignupResponse{
-		Message: resp.Message,
-		OtpHash: resp.OTPHash,
-	}, nil
-}
-
-// VerifyOTP verifies an OTP and marks user as verified
-func (s *AuthServiceImpl) VerifyOTP(ctx context.Context, req *pb.VerifyOTPRequest) (*pb.VerifyOTPResponse, error) {
-	// Validate request
-	if err := s.validateVerifyOTPRequest(req); err != nil {
-		gtk.LoggerFromContext(ctx).Warn("verify otp validation error", zap.Error(err))
-		return nil, err
-	}
-
-	// Call service
-	serviceReq := service.VerifyOTPRequest{
-		OTPHash: req.OtpHash,
-		Code:    req.Code,
-	}
-
-	resp, err := s.authService.VerifyOTP(ctx, serviceReq)
-	if err != nil {
-		gtk.LoggerFromContext(ctx).Error("verify otp error", zap.Error(err))
-		return nil, err
-	}
-
-	return &pb.VerifyOTPResponse{
-		Message:      resp.Message,
-		Username:     resp.Username,
-		SessionToken: resp.SessionToken,
-	}, nil
-}
-
-// Login authenticates a user
-func (s *AuthServiceImpl) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	// Validate request
-	if err := s.validateLoginRequest(req); err != nil {
-		gtk.LoggerFromContext(ctx).Warn("login validation error", zap.Error(err))
-		return nil, err
-	}
-
-	// Call service
-	serviceReq := service.LoginRequest{
-		Email:    req.Email,
-		Password: req.Password,
-	}
-
-	resp, err := s.authService.Login(ctx, serviceReq)
-	if err != nil {
-		gtk.LoggerFromContext(ctx).Error("login error", zap.Error(err))
-		return nil, err
-	}
-
-	return &pb.LoginResponse{
-		SessionToken: resp.SessionToken,
-		ExpiresAt:    timestamppb.New(resp.ExpiresAt),
-	}, nil
 }
 
 // ValidateSession validates a session token
@@ -154,30 +73,6 @@ func (s *AuthServiceImpl) RefreshSession(ctx context.Context, req *pb.RefreshSes
 
 	return &pb.RefreshSessionResponse{
 		NewSessionToken: resp.NewSessionToken,
-	}, nil
-}
-
-// Logout logs out a session
-func (s *AuthServiceImpl) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
-	// Extract token from metadata
-	token := extractToken(ctx)
-	if token == "" {
-		return nil, status.Error(codes.Unauthenticated, "missing authorization token")
-	}
-
-	// Call service
-	serviceReq := service.LogoutRequest{
-		Token: token,
-	}
-
-	resp, err := s.authService.Logout(ctx, serviceReq)
-	if err != nil {
-		gtk.LoggerFromContext(ctx).Error("logout error", zap.Error(err))
-		return nil, err
-	}
-
-	return &pb.LogoutResponse{
-		Message: resp.Message,
 	}, nil
 }
 
@@ -232,45 +127,6 @@ func (s *AuthServiceImpl) ResetPassword(ctx context.Context, req *pb.ResetPasswo
 }
 
 // Private helper and validation methods
-
-func (s *AuthServiceImpl) validateSignupRequest(req *pb.SignupRequest) error {
-	if req.Email == "" {
-		return &gtk.ValidationError{Message: "email is required", Field: "email"}
-	}
-	if req.Password == "" {
-		return &gtk.ValidationError{Message: "password is required", Field: "password"}
-	}
-	if err := s.validator.ValidateEmail(req.Email); err != nil {
-		return &gtk.ValidationError{Message: err.Error(), Field: "email"}
-	}
-	if err := s.validator.ValidatePassword(req.Password); err != nil {
-		return &gtk.ValidationError{Message: err.Error(), Field: "password"}
-	}
-	return nil
-}
-
-func (s *AuthServiceImpl) validateVerifyOTPRequest(req *pb.VerifyOTPRequest) error {
-	if req.OtpHash == "" {
-		return &gtk.ValidationError{Message: "otp_hash is required", Field: "otp_hash"}
-	}
-	if req.Code == "" {
-		return &gtk.ValidationError{Message: "code is required", Field: "code"}
-	}
-	return nil
-}
-
-func (s *AuthServiceImpl) validateLoginRequest(req *pb.LoginRequest) error {
-	if req.Email == "" {
-		return &gtk.ValidationError{Message: "email is required", Field: "email"}
-	}
-	if req.Password == "" {
-		return &gtk.ValidationError{Message: "password is required", Field: "password"}
-	}
-	if err := s.validator.ValidateEmail(req.Email); err != nil {
-		return &gtk.ValidationError{Message: err.Error(), Field: "email"}
-	}
-	return nil
-}
 
 func (s *AuthServiceImpl) validateForgotPasswordRequest(req *pb.ForgotPasswordRequest) error {
 	if req.Email == "" {

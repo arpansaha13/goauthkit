@@ -21,20 +21,20 @@ func NewValidator() *Validator {
 
 // SignupRequest validation
 type SignupPayload struct {
-	Email    string `validate:"required,email"`
-	Password string `validate:"required,min=8"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
 }
 
 // LoginRequest validation
 type LoginPayload struct {
-	Email    string `validate:"required,email"`
-	Password string `validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
 // VerifyOTPRequest validation
 type VerifyOTPPayload struct {
-	UserID string `validate:"required,uuid"`
-	Code   string `validate:"required,len=6,numeric"`
+	OtpHash string `json:"otp_hash" validate:"required,hexadecimal,len=64"`
+	Code    string `json:"code" validate:"required,len=6,numeric"`
 }
 
 // Validate validates a struct

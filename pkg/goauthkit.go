@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/sony/gobreaker/v2"
@@ -251,6 +252,29 @@ func NewAuthServiceImpl(authService IAuthService, validator *Validator) *AuthSer
 	return controller.NewAuthServiceImpl(authService, validator)
 }
 
+// HTTP Controller Exports
+type CookieConfig = controller.CookieConfig
+
+// NewSignupController creates a new HTTP signup controller
+func NewSignupController(authService IAuthService, validator *Validator) gtk.ControllerFunc {
+	return controller.NewSignupController(authService, validator)
+}
+
+// NewLoginController creates a new HTTP login controller
+func NewLoginController(authService IAuthService, validator *Validator, cookieConfig CookieConfig) gtk.ControllerFunc {
+	return controller.NewLoginController(authService, validator, cookieConfig)
+}
+
+// NewVerifyOTPController creates a new HTTP OTP verification controller
+func NewVerifyOTPController(authService IAuthService, validator *Validator, cookieConfig CookieConfig) gtk.ControllerFunc {
+	return controller.NewVerifyOTPController(authService, validator, cookieConfig)
+}
+
+// NewLogoutController creates a new HTTP logout controller
+func NewLogoutController(authService IAuthService, cookieConfig CookieConfig) gtk.ControllerFunc {
+	return controller.NewLogoutController(authService, cookieConfig)
+}
+
 // ============================================================================
 // Middleware Exports
 // ============================================================================
@@ -258,6 +282,11 @@ func NewAuthServiceImpl(authService IAuthService, validator *Validator) *AuthSer
 // AuthorizationInterceptor intercepts gRPC requests to validate session tokens
 func AuthorizationInterceptor() grpc.UnaryServerInterceptor {
 	return middleware.AuthorizationInterceptor()
+}
+
+// NewAuthMiddleware returns an HTTP middleware that validates session tokens
+func NewAuthMiddleware(authService IAuthService, cookieName string) func(http.Handler) http.Handler {
+	return middleware.NewAuthMiddleware(authService, cookieName)
 }
 
 // ============================================================================
