@@ -16,14 +16,14 @@ fi
 
 # Check if protoc-gen-go is installed
 if ! command -v protoc-gen-go &> /dev/null; then
-    echo "Installing protoc-gen-go..."
-    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+    echo "Error: protoc-gen-go is not installed. Please run setup.sh first."
+    exit 1
 fi
 
 # Check if protoc-gen-go-grpc is installed
 if ! command -v protoc-gen-go-grpc &> /dev/null; then
-    echo "Installing protoc-gen-go-grpc..."
-    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+    echo "Error: protoc-gen-go-grpc is not installed. Please run setup.sh first."
+    exit 1
 fi
 
 # Generate Go code from proto files
