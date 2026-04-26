@@ -92,6 +92,8 @@ type VerifyOTPRequest = isvc.VerifyOTPRequest
 type VerifyOTPResponse = isvc.VerifyOTPResponse
 type LoginRequest = isvc.LoginRequest
 type LoginResponse = isvc.LoginResponse
+
+type ExchangeOAuthCodeRequest = isvc.ExchangeOAuthCodeRequest
 type ValidateSessionRequest = isvc.ValidateSessionRequest
 type ValidateSessionResponse = isvc.ValidateSessionResponse
 type RefreshSessionRequest = isvc.RefreshSessionRequest
@@ -114,11 +116,12 @@ func NewAuthService(
 	userRepo IUserRepository,
 	otpRepo IOTPRepository,
 	sessionRepo ISessionRepository,
+	providerRepo IProviderRepository,
 	sessionCache ISessionCache,
 	hasher *PasswordHasher,
 	config AuthServiceConfig,
 ) IAuthService {
-	return isvc.NewAuthService(userRepo, otpRepo, sessionRepo, sessionCache, hasher, config)
+	return isvc.NewAuthService(userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher, config)
 }
 
 // ============================================================================
@@ -129,11 +132,13 @@ func NewAuthService(
 type IUserRepository = irepo.IUserRepository
 type IOTPRepository = irepo.IOTPRepository
 type ISessionRepository = irepo.ISessionRepository
+type IProviderRepository = irepo.IProviderRepository
 
 // Repository implementations
 type UserRepository = irepo.UserRepository
 type OTPRepository = irepo.OTPRepository
 type SessionRepository = irepo.SessionRepository
+type ProviderRepository = irepo.ProviderRepository
 
 // NewUserRepository creates a new user repository
 func NewUserRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) IUserRepository {
@@ -148,6 +153,11 @@ func NewOTPRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) IOTPReposi
 // NewSessionRepository creates a new session repository
 func NewSessionRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) ISessionRepository {
 	return irepo.NewSessionRepository(db, cb)
+}
+
+// NewProviderRepository creates a new provider repository
+func NewProviderRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) IProviderRepository {
+	return irepo.NewProviderRepository(db, cb)
 }
 
 // ============================================================================
@@ -233,6 +243,7 @@ func NewAuthServiceImpl(authService IAuthService, validator *Validator) *AuthSer
 
 // HTTP Controller Exports
 type CookieConfig = controller.CookieConfig
+type ProviderConfig = controller.ProviderConfig
 
 // NewSignupController creates a new HTTP signup controller
 func NewSignupController(authService IAuthService, validator *Validator) gtk.ControllerFunc {
@@ -252,6 +263,16 @@ func NewVerifyOTPController(authService IAuthService, validator *Validator, cook
 // NewLogoutController creates a new HTTP logout controller
 func NewLogoutController(authService IAuthService, cookieConfig CookieConfig) gtk.ControllerFunc {
 	return controller.NewLogoutController(authService, cookieConfig)
+}
+
+// NewOAuthLoginController returns a controller that initiates the OAuth flow
+func NewOAuthLoginController(providerCfg ProviderConfig) gtk.ControllerFunc {
+	return controller.NewOAuthLoginController(providerCfg)
+}
+
+// NewOAuthCallbackController returns a controller that handles the OAuth callback
+func NewOAuthCallbackController(authService IAuthService, providerCfg ProviderConfig, cookieConfig CookieConfig) gtk.ControllerFunc {
+	return controller.NewOAuthCallbackController(authService, providerCfg, cookieConfig)
 }
 
 // ============================================================================

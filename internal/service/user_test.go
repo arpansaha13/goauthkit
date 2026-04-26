@@ -89,7 +89,7 @@ func TestAuthService_GetUser(t *testing.T) {
 				SessionTTL: time.Hour * 24,
 				SecretKey:  "secret",
 			}
-			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, nil, hasher, config)
+			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, nil, hasher, config)
 			resp, err := svc.GetUser(context.Background(), service.GetUserRequest{UserID: tt.userID})
 
 			if tt.expectedError {
@@ -176,7 +176,7 @@ func TestAuthService_GetUserByEmail(t *testing.T) {
 				SessionTTL: time.Hour * 24,
 				SecretKey:  "secret",
 			}
-			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, nil, hasher, config)
+			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, nil, hasher, config)
 			resp, err := svc.GetUserByEmail(context.Background(), service.GetUserByEmailRequest{Email: tt.email})
 
 			if tt.expectedError {
@@ -264,7 +264,7 @@ func TestAuthService_DeleteUser(t *testing.T) {
 				SessionTTL: time.Hour * 24,
 				SecretKey:  "secret",
 			}
-			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, nil, hasher, config)
+			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, nil, hasher, config)
 			resp, err := svc.DeleteUser(context.Background(), service.DeleteUserRequest{UserID: tt.userID})
 
 			if tt.expectedError {

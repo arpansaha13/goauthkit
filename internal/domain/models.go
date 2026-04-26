@@ -10,8 +10,9 @@ import (
 type User struct {
 	ID        int64   `gorm:"primaryKey;autoIncrement"`
 	Email     string  `gorm:"type:varchar(255);uniqueIndex;not null"`
-	Username  *string `gorm:"type:varchar(100);uniqueIndex"`
-	Verified  bool    `gorm:"default:false;not null"`
+	Username   *string `gorm:"type:varchar(100);uniqueIndex"`
+	GlobalName string  `gorm:"type:varchar(100)"`
+	Verified   bool    `gorm:"default:false;not null"`
 	LastLogin *time.Time
 	CreatedAt time.Time
 
@@ -81,6 +82,23 @@ type Session struct {
 	User *User `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE"`
 }
 
+// UserProvider represents the user_providers table
+type UserProvider struct {
+	ProviderID  string    `gorm:"primaryKey;type:varchar(50)"`
+	ProviderSub string    `gorm:"primaryKey;type:varchar(255)"`
+	UserID      int64     `gorm:"not null;uniqueIndex:idx_provider_user"`
+	LastLoginAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	CreatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`
+
+	// Relation
+	User *User `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE"`
+}
+
+// TableName specifies the table name for the UserProvider model
+func (UserProvider) TableName() string {
+	return "user_providers"
+}
+
 // TableName specifies the table name for the Session model
 func (Session) TableName() string {
 	return "sessions"
@@ -93,5 +111,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&Credentials{},
 		&OTP{},
 		&Session{},
+		&UserProvider{},
 	)
 }

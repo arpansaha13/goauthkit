@@ -1,4 +1,5 @@
 -- 1. Drop dependent/child tables first
+DROP TABLE IF EXISTS user_providers;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS otps;
 DROP TABLE IF EXISTS credentials;

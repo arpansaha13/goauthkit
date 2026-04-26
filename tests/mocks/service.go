@@ -19,6 +19,7 @@ type MockAuthService struct {
 	GetUserFunc         func(ctx context.Context, req service.GetUserRequest) (*service.GetUserResponse, error)
 	GetUserByEmailFunc  func(ctx context.Context, req service.GetUserByEmailRequest) (*service.GetUserByEmailResponse, error)
 	DeleteUserFunc      func(ctx context.Context, req service.DeleteUserRequest) (*service.DeleteUserResponse, error)
+	ExchangeOAuthCodeFunc func(ctx context.Context, req service.ExchangeOAuthCodeRequest) (*service.LoginResponse, error)
 }
 
 func (m *MockAuthService) Signup(ctx context.Context, req service.SignupRequest) (*service.SignupResponse, error) {
@@ -110,11 +111,19 @@ func (m *MockAuthService) DeleteUser(ctx context.Context, req service.DeleteUser
 	return &service.DeleteUserResponse{Message: "user deleted successfully"}, nil
 }
 
+func (m *MockAuthService) ExchangeOAuthCode(ctx context.Context, req service.ExchangeOAuthCodeRequest) (*service.LoginResponse, error) {
+	if m.ExchangeOAuthCodeFunc != nil {
+		return m.ExchangeOAuthCodeFunc(ctx, req)
+	}
+	return &service.LoginResponse{SessionToken: "token"}, nil
+}
+
 // MockAuthServiceForUser mocks the auth service for user controller tests
 type MockAuthServiceForUser struct {
 	GetUserFunc        func(ctx context.Context, req service.GetUserRequest) (*service.GetUserResponse, error)
 	GetUserByEmailFunc func(ctx context.Context, req service.GetUserByEmailRequest) (*service.GetUserByEmailResponse, error)
 	DeleteUserFunc     func(ctx context.Context, req service.DeleteUserRequest) (*service.DeleteUserResponse, error)
+	ExchangeOAuthCodeFunc func(ctx context.Context, req service.ExchangeOAuthCodeRequest) (*service.LoginResponse, error)
 }
 
 // Implement the IAuthService interface for mocking
@@ -183,4 +192,11 @@ func (m *MockAuthServiceForUser) DeleteUser(ctx context.Context, req service.Del
 		return m.DeleteUserFunc(ctx, req)
 	}
 	return &service.DeleteUserResponse{Message: "user deleted successfully"}, nil
+}
+
+func (m *MockAuthServiceForUser) ExchangeOAuthCode(ctx context.Context, req service.ExchangeOAuthCodeRequest) (*service.LoginResponse, error) {
+	if m.ExchangeOAuthCodeFunc != nil {
+		return m.ExchangeOAuthCodeFunc(ctx, req)
+	}
+	return nil, nil
 }

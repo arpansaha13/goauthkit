@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     username VARCHAR(100) UNIQUE,
+    global_name VARCHAR(100),
     verified BOOLEAN DEFAULT FALSE,
     last_login TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -34,6 +35,17 @@ CREATE TABLE IF NOT EXISTS sessions (
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     deleted_at TIMESTAMP WITH TIME ZONE, -- Soft delete timestamp
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User Providers Table
+CREATE TABLE IF NOT EXISTS user_providers (
+    provider_id VARCHAR(50) NOT NULL,
+    provider_sub VARCHAR(255) NOT NULL,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    last_login_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (provider_id, provider_sub),
+    UNIQUE (provider_id, user_id)
 );
 
 -- Indexes for performance

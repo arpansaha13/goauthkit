@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
+
 	"github.com/arpansaha13/goauthkit/internal/cache"
 	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/internal/repository"
@@ -22,7 +25,8 @@ type AuthService struct {
 	userRepo     repository.IUserRepository
 	otpRepo      repository.IOTPRepository
 	sessionRepo  repository.ISessionRepository
-	sessionCache cache.ISessionCache // Optional cache layer for sessions (nil-safe)
+	providerRepo repository.IProviderRepository
+	sessionCache cache.ISessionCache
 	hasher       *utils.PasswordHasher
 	config       AuthServiceConfig
 }
@@ -43,6 +47,7 @@ func NewAuthService(
 	userRepo repository.IUserRepository,
 	otpRepo repository.IOTPRepository,
 	sessionRepo repository.ISessionRepository,
+	providerRepo repository.IProviderRepository,
 	sessionCache cache.ISessionCache,
 	hasher *utils.PasswordHasher,
 	config AuthServiceConfig,
@@ -51,6 +56,7 @@ func NewAuthService(
 		userRepo:     userRepo,
 		otpRepo:      otpRepo,
 		sessionRepo:  sessionRepo,
+		providerRepo: providerRepo,
 		sessionCache: sessionCache,
 		hasher:       hasher,
 		config:       config,
@@ -155,10 +161,11 @@ type VerifyOTPRequest struct {
 
 // VerifyOTPResponse represents OTP verification output with username, OTP hash, and initial session
 type VerifyOTPResponse struct {
-	Message      string `json:"message"`
-	Username     string `json:"username"`
-	OTPHash      string `json:"otp_hash"`
-	SessionToken string `json:"session_token"`
+	Message      string    `json:"message"`
+	Username     string    `json:"username"`
+	OTPHash      string    `json:"otp_hash"`
+	SessionToken string    `json:"session_token"`
+	ExpiresAt    time.Time `json:"expires_at"`
 }
 
 // VerifyOTP verifies the OTP code sent to user's email and marks user as verified.
@@ -215,20 +222,9 @@ func (s *AuthService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*Ver
 	}
 
 	// Create session
-	sessionToken, err := utils.GenerateToken(32)
+	sessionToken, expiresAt, err := s.createSession(ctx, userID)
 	if err != nil {
-		return nil, &gtk.InternalError{Message: "failed to generate session token", Err: err}
-	}
-
-	tokenHash := s.hashToken(sessionToken)
-	session := &domain.Session{
-		UserID:    userID,
-		TokenHash: tokenHash,
-		ExpiresAt: time.Now().Add(s.config.SessionTTL),
-	}
-
-	if err := s.sessionRepo.Create(ctx, session); err != nil {
-		return nil, &gtk.InternalError{Message: "failed to create session", Err: err}
+		return nil, err
 	}
 
 	return &VerifyOTPResponse{
@@ -236,6 +232,7 @@ func (s *AuthService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*Ver
 		Username:     username,
 		OTPHash:      req.OTPHash,
 		SessionToken: sessionToken,
+		ExpiresAt:    expiresAt,
 	}, nil
 }
 
@@ -249,6 +246,118 @@ type LoginRequest struct {
 type LoginResponse struct {
 	SessionToken string    `json:"session_token"`
 	ExpiresAt    time.Time `json:"expires_at"`
+}
+
+// ExchangeOAuthCodeRequest represents OAuth callback input
+type ExchangeOAuthCodeRequest struct {
+	ProviderID string        `json:"provider_id"`
+	Code       string        `json:"code"`
+	RedirectURI string       `json:"redirect_uri"`
+	Nonce      string        `json:"nonce"`
+	OAuthConfig *oauth2.Config `json:"-"`
+	Verifier    *oidc.IDTokenVerifier `json:"-"`
+}
+
+// ExchangeOAuthCode exchanges an OAuth authorization code for a session token.
+// It verifies the ID token, validates the nonce, and handles user creation or linking.
+func (s *AuthService) ExchangeOAuthCode(ctx context.Context, req ExchangeOAuthCodeRequest) (*LoginResponse, error) {
+	// Exchange code for token
+	oauth2Token, err := req.OAuthConfig.Exchange(ctx, req.Code)
+	if err != nil {
+		return nil, &gtk.UnauthorizedError{Message: "failed to exchange code"}
+	}
+
+	// Extract and verify ID Token
+	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
+	if !ok {
+		return nil, &gtk.UnauthorizedError{Message: "no id_token in response"}
+	}
+
+	idToken, err := req.Verifier.Verify(ctx, rawIDToken)
+	if err != nil {
+		return nil, &gtk.UnauthorizedError{Message: "failed to verify id token"}
+	}
+
+	// Validate Nonce
+	if idToken.Nonce != req.Nonce {
+		return nil, &gtk.UnauthorizedError{Message: "nonce mismatch"}
+	}
+
+	// Extract claims
+	var claims struct {
+		Subject       string `json:"sub"`
+		Email         string `json:"email"`
+		EmailVerified bool   `json:"email_verified"`
+		Name          string `json:"name"`
+		Picture       string `json:"picture"`
+	}
+	if err := idToken.Claims(&claims); err != nil {
+		return nil, &gtk.InternalError{Message: "failed to parse claims", Err: err}
+	}
+
+	// 1. Check if (provider, sub) exists
+	providerLink, err := s.providerRepo.GetByProvider(ctx, req.ProviderID, claims.Subject)
+	if err == nil {
+		// Existing provider link -> Login
+		_ = s.providerRepo.UpdateLastLogin(ctx, req.ProviderID, claims.Subject)
+		
+		sessionToken, expiresAt, err := s.createSession(ctx, providerLink.UserID)
+		if err != nil {
+			return nil, err
+		}
+		return &LoginResponse{
+			SessionToken: sessionToken,
+			ExpiresAt:    expiresAt,
+		}, nil
+	}
+
+	if !gtk.IsNotFound(err) {
+		return nil, err
+	}
+
+	// 2. Provider link not found. Check if user with email exists.
+	_, err = s.userRepo.GetByEmail(ctx, claims.Email)
+	if err == nil {
+		// Email exists -> Conflict (instruct user to login and link)
+		return nil, &gtk.ConflictError{Message: "an account with this email already exists, please login and link your provider"}
+	}
+
+	if !gtk.IsNotFound(err) {
+		return nil, err
+	}
+
+	// 3. User does not exist -> Create new user and link provider
+	newUser := &domain.User{
+		Email:    claims.Email,
+		Verified: true, // OAuth providers verify emails
+		GlobalName: claims.Name,
+	}
+
+	// Create user with empty credentials (since it's OAuth-only for now)
+	if err := s.userRepo.Create(ctx, newUser, &domain.Credentials{}); err != nil {
+		return nil, &gtk.InternalError{Message: "failed to create user", Err: err}
+	}
+
+	// Link provider
+	providerLink = &domain.UserProvider{
+		ProviderID:  req.ProviderID,
+		ProviderSub: claims.Subject,
+		UserID:      newUser.ID,
+	}
+	if err := s.providerRepo.Create(ctx, providerLink); err != nil {
+		return nil, &gtk.InternalError{Message: "failed to link provider", Err: err}
+	}
+
+	// Create session
+	sessionToken, expiresAt, err := s.createSession(ctx, newUser.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LoginResponse{
+		SessionToken: sessionToken,
+		ExpiresAt:    expiresAt,
+	}, nil
 }
 
 // Login authenticates a user with email and password credentials.
@@ -279,27 +388,9 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 	_ = s.userRepo.UpdateLastLogin(ctx, user.ID)
 
 	// Create session
-	sessionToken, err := utils.GenerateToken(32)
+	sessionToken, expiresAt, err := s.createSession(ctx, user.ID)
 	if err != nil {
-		return nil, &gtk.InternalError{Message: "failed to generate session token", Err: err}
-	}
-
-	tokenHash := s.hashToken(sessionToken)
-	expiresAt := time.Now().Add(s.config.SessionTTL)
-
-	session := &domain.Session{
-		UserID:    user.ID,
-		TokenHash: tokenHash,
-		ExpiresAt: expiresAt,
-	}
-
-	if err := s.sessionRepo.Create(ctx, session); err != nil {
-		return nil, &gtk.InternalError{Message: "failed to create session", Err: err}
-	}
-
-	// Cache the new session (best-effort, failures are non-fatal)
-	if s.sessionCache != nil {
-		_ = s.sessionCache.SetSession(ctx, tokenHash, session, s.config.SessionTTL)
+		return nil, err
 	}
 
 	return &LoginResponse{
@@ -618,4 +709,31 @@ func (s *AuthService) generateUniqueUsername(ctx context.Context, emailPrefix st
 func (s *AuthService) hashToken(token string) string {
 	hash := sha256.Sum256([]byte(token + s.config.SecretKey))
 	return hex.EncodeToString(hash[:])
+}
+
+func (s *AuthService) createSession(ctx context.Context, userID int64) (string, time.Time, error) {
+	sessionToken, err := utils.GenerateToken(32)
+	if err != nil {
+		return "", time.Time{}, &gtk.InternalError{Message: "failed to generate session token", Err: err}
+	}
+
+	tokenHash := s.hashToken(sessionToken)
+	expiresAt := time.Now().Add(s.config.SessionTTL)
+
+	session := &domain.Session{
+		UserID:    userID,
+		TokenHash: tokenHash,
+		ExpiresAt: expiresAt,
+	}
+
+	if err := s.sessionRepo.Create(ctx, session); err != nil {
+		return "", time.Time{}, &gtk.InternalError{Message: "failed to create session", Err: err}
+	}
+
+	// Cache the new session (best-effort, failures are non-fatal)
+	if s.sessionCache != nil {
+		_ = s.sessionCache.SetSession(ctx, tokenHash, session, s.config.SessionTTL)
+	}
+
+	return sessionToken, expiresAt, nil
 }

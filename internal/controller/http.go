@@ -108,11 +108,7 @@ func NewVerifyOTPController(authService service.IAuthService, validator *utils.V
 		// For now, I'll use a fixed duration if not available, or I should update service.VerifyOTPResponse.
 		// Let's check service.VerifyOTPResponse in internal/service/auth.go again.
 		
-		// Set cookie for 30 minutes if we don't have the exact expiry. 
-		// Ideally I should update the service to return expires_at.
-		expiresAt := time.Now().Add(30 * time.Minute) 
-
-		setSessionCookie(w, cookieConfig, resp.SessionToken, expiresAt)
+		setSessionCookie(w, cookieConfig, resp.SessionToken, resp.ExpiresAt)
 
 		return &gtk.ControllerResponse{
 			StatusCode: http.StatusOK,

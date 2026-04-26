@@ -156,10 +156,12 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 	s.EmailProvider = emailProviderInterface.(*pkg.MockEmailProvider)
 	s.EmailPool = pkg.NewEmailWorkerPool(2, 50, emailProviderInterface)
 
+	providerRepo := pkg.NewProviderRepository(db, cb)
 	s.AuthService = pkg.NewAuthService(
 		userRepo,
 		otpRepo,
 		sessionRepo,
+		providerRepo,
 		nil,
 		hasher,
 		pkg.AuthServiceConfig{

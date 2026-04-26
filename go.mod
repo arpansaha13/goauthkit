@@ -3,14 +3,16 @@ module github.com/arpansaha13/goauthkit
 go 1.25.6
 
 require (
-	github.com/arpansaha13/gotoolkit v0.12.0
+	github.com/arpansaha13/gotoolkit v0.12.1
 	github.com/bradfitz/gomemcache v0.0.0-20250403215159-8d39553ac7cf
+	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/sony/gobreaker/v2 v2.4.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.48.0
+	golang.org/x/oauth2 v0.36.0
 	google.golang.org/grpc v1.79.1
 	google.golang.org/protobuf v1.36.11
 	gorm.io/driver/postgres v1.6.0
@@ -37,6 +39,7 @@ require (
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect

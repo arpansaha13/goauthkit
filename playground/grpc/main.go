@@ -68,6 +68,7 @@ func main() {
 	userRepo := pkg.NewUserRepository(db, cb)
 	otpRepo := pkg.NewOTPRepository(db, cb)
 	sessionRepo := pkg.NewSessionRepository(db, cb)
+	providerRepo := pkg.NewProviderRepository(db, cb)
 
 	// Initialize email provider
 	var emailProvider pkg.EmailProvider
@@ -100,6 +101,7 @@ func main() {
 		userRepo,
 		otpRepo,
 		sessionRepo,
+		providerRepo,
 		sessionCache,
 		hasher,
 		pkg.AuthServiceConfig{

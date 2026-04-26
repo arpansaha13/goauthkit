@@ -43,9 +43,17 @@ type ISessionRepository interface {
 	IsTokenValid(ctx context.Context, tokenHash string) (bool, int64, error)
 }
 
+// IProviderRepository defines the interface for user provider repository operations
+type IProviderRepository interface {
+	Create(ctx context.Context, provider *domain.UserProvider) error
+	GetByProvider(ctx context.Context, providerID, providerSub string) (*domain.UserProvider, error)
+	UpdateLastLogin(ctx context.Context, providerID, providerSub string) error
+}
+
 // Compile-time checks to ensure structs implement their interfaces
 var (
-	_ IUserRepository    = (*UserRepository)(nil)
-	_ IOTPRepository     = (*OTPRepository)(nil)
-	_ ISessionRepository = (*SessionRepository)(nil)
+	_ IUserRepository     = (*UserRepository)(nil)
+	_ IOTPRepository      = (*OTPRepository)(nil)
+	_ ISessionRepository  = (*SessionRepository)(nil)
+	_ IProviderRepository = (*ProviderRepository)(nil)
 )

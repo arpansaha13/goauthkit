@@ -35,7 +35,7 @@ if [ -f ".env" ]; then
 fi
 
 # Use DATABASE_URL from environment or default
-DB_URL="${DATABASE_URL:-postgres://user:password@localhost:5432/auth_db?sslmode=disable}"
+DB_URL="${DATABASE_URL:-postgres://user:password@localhost:7010/auth_db?sslmode=disable}"
 
 MIGRATE_BASE=(migrate -path "$MIGRATIONS_DIR" -database "$DB_URL")
 
