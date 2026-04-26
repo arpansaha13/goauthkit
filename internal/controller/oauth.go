@@ -4,7 +4,6 @@ import (
 	// "context"
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -23,7 +22,6 @@ type ProviderConfig struct {
 	RedirectURI  string
 	Scopes       []string
 	Issuer       string
-	FrontendURL  string // Base URL of the frontend (e.g. http://localhost:3000)
 }
 
 // NewOAuthLoginController returns a controller that initiates the OAuth flow
@@ -109,10 +107,9 @@ func NewOAuthCallbackController(authService service.IAuthService, providerCfg Pr
 		if err != nil {
 			if gtk.IsConflict(err) {
 				// Redirect to frontend login with error param
-				loginURL := fmt.Sprintf("%s/auth/login?error=account_exists", providerCfg.FrontendURL)
 				return &gtk.ControllerResponse{
 					StatusCode: http.StatusFound,
-					Headers:    map[string]string{"Location": loginURL},
+					Headers:    map[string]string{"Location": "/auth/login?error=account_exists"},
 				}, nil
 			}
 			return nil, err
@@ -128,7 +125,7 @@ func NewOAuthCallbackController(authService service.IAuthService, providerCfg Pr
 		// Redirect to frontend home or dashboard
 		return &gtk.ControllerResponse{
 			StatusCode: http.StatusFound,
-			Headers:    map[string]string{"Location": providerCfg.FrontendURL},
+			Headers:    map[string]string{"Location": "/"},
 		}, nil
 	}
 }
