@@ -12,6 +12,7 @@ import (
 
 	iccache "github.com/arpansaha13/goauthkit/internal/cache"
 	"github.com/arpansaha13/goauthkit/internal/controller"
+	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/internal/middleware"
 	irepo "github.com/arpansaha13/goauthkit/internal/repository"
 	isvc "github.com/arpansaha13/goauthkit/internal/service"
@@ -92,6 +93,12 @@ type VerifyOTPRequest = isvc.VerifyOTPRequest
 type VerifyOTPResponse = isvc.VerifyOTPResponse
 type LoginRequest = isvc.LoginRequest
 type LoginResponse = isvc.LoginResponse
+
+type ProviderType = domain.ProviderType
+
+const (
+	ProviderTypeGoogle = domain.ProviderTypeGoogle
+)
 
 type ExchangeOAuthCodeRequest = isvc.ExchangeOAuthCodeRequest
 type ValidateSessionRequest = isvc.ValidateSessionRequest

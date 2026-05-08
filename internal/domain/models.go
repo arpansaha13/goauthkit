@@ -6,12 +6,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// ProviderType represents the type of OAuth provider
+type ProviderType int16
+
+const (
+	ProviderTypeGoogle ProviderType = 1
+)
+
 // User represents the users table
 type User struct {
 	ID        int64   `gorm:"primaryKey;autoIncrement"`
 	Email     string  `gorm:"type:varchar(255);uniqueIndex;not null"`
 	Username   *string `gorm:"type:varchar(100);uniqueIndex"`
-	GlobalName string  `gorm:"type:varchar(100)"`
+	Name      string  `gorm:"type:varchar(100)"`
 	Verified   bool    `gorm:"default:false;not null"`
 	LastLogin *time.Time
 	CreatedAt time.Time
@@ -84,7 +91,7 @@ type Session struct {
 
 // UserProvider represents the user_providers table
 type UserProvider struct {
-	ProviderID  string    `gorm:"primaryKey;type:varchar(50)"`
+	ProviderID  ProviderType `gorm:"primaryKey;type:smallint"`
 	ProviderSub string    `gorm:"primaryKey;type:varchar(255)"`
 	UserID      int64     `gorm:"not null;uniqueIndex:idx_provider_user"`
 	LastLoginAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"`

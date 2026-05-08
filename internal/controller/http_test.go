@@ -33,6 +33,7 @@ func TestSignupValidation(t *testing.T) {
 			Body: map[string]string{
 				"email":    "test@example.com",
 				"password": "securePassword123",
+				"name":     "Test User",
 			},
 			ExpectedError: false,
 			MockFunc: func(ctx context.Context, req service.SignupRequest) (*service.SignupResponse, error) {
@@ -44,6 +45,7 @@ func TestSignupValidation(t *testing.T) {
 			Body: map[string]string{
 				"email":    "",
 				"password": "securePassword123",
+				"name":     "Test User",
 			},
 			ExpectedError: true,
 			ErrorType:     (*gtk.ValidationError)(nil),
@@ -216,6 +218,7 @@ func TestLoginValidation(t *testing.T) {
 			Body: map[string]string{
 				"email":    "test@example.com",
 				"password": "securePassword123",
+				"name":     "Test User",
 			},
 			ExpectedError: false,
 			MockFunc: func(ctx context.Context, req service.LoginRequest) (*service.LoginResponse, error) {
@@ -227,6 +230,7 @@ func TestLoginValidation(t *testing.T) {
 			Body: map[string]string{
 				"email":    "",
 				"password": "securePassword123",
+				"name":     "Test User",
 			},
 			ExpectedError: true,
 			ErrorType:     (*gtk.ValidationError)(nil),
@@ -305,6 +309,7 @@ func TestSignupErrorHandling(t *testing.T) {
 			Body: map[string]string{
 				"email":    "test@example.com",
 				"password": "securePassword123",
+				"name":     "Test User",
 			},
 			ExpectedError: true,
 			ErrorType:     (*gtk.ConflictError)(nil),
@@ -317,6 +322,7 @@ func TestSignupErrorHandling(t *testing.T) {
 			Body: map[string]string{
 				"email":    "test@example.com",
 				"password": "securePassword123",
+				"name":     "Test User",
 			},
 			ExpectedError: true,
 			ErrorType:     (*gtk.ValidationError)(nil),
@@ -329,6 +335,7 @@ func TestSignupErrorHandling(t *testing.T) {
 			Body: map[string]string{
 				"email":    "test@example.com",
 				"password": "securePassword123",
+				"name":     "Test User",
 			},
 			ExpectedError: true,
 			ErrorType:     (*gtk.InternalError)(nil),

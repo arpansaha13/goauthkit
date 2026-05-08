@@ -17,6 +17,7 @@ type UserData struct {
 	UserID    int64
 	Email     string
 	Username  string
+	Name      string
 	Verified  bool
 	CreatedAt time.Time
 }
@@ -44,6 +45,7 @@ func (s *AuthService) GetUser(ctx context.Context, req GetUserRequest) (*GetUser
 		UserID:    user.ID,
 		Email:     user.Email,
 		Username:  username,
+		Name:      user.Name,
 		Verified:  user.Verified,
 		CreatedAt: user.CreatedAt,
 	}
@@ -79,6 +81,7 @@ func (s *AuthService) GetUserByEmail(ctx context.Context, req GetUserByEmailRequ
 		UserID:    user.ID,
 		Email:     user.Email,
 		Username:  username,
+		Name:      user.Name,
 		Verified:  user.Verified,
 		CreatedAt: user.CreatedAt,
 	}

@@ -15,6 +15,7 @@ type User struct {
 	ID        int64   `gorm:"primaryKey;autoIncrement"`
 	Email     string  `gorm:"type:varchar(255);uniqueIndex;not null"`
 	Username  *string `gorm:"type:varchar(100);uniqueIndex"`
+	Name      string  `gorm:"type:varchar(100)"`
 	Verified  bool    `gorm:"default:false;not null"`
 	LastLogin *time.Time
 	CreatedAt time.Time
@@ -90,6 +91,25 @@ func (Session) TableName() string {
 	return "sessions"
 }
 
+
+
+// UserProvider represents the user_providers table
+type UserProvider struct {
+	ProviderID  ProviderType `gorm:"primaryKey;type:smallint"`
+	ProviderSub string       `gorm:"primaryKey;type:varchar(255)"`
+	UserID      int64        `gorm:"not null;uniqueIndex:idx_provider_user"`
+	LastLoginAt time.Time    `gorm:"not null;default:CURRENT_TIMESTAMP"`
+	CreatedAt   time.Time    `gorm:"not null;default:CURRENT_TIMESTAMP"`
+
+	// Relation
+	User *User `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE"`
+}
+
+// TableName specifies the table name for the UserProvider model
+func (UserProvider) TableName() string {
+	return "user_providers"
+}
+
 // AutoMigrate runs auto migrations (should not be used - migrations are manual)
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
@@ -97,5 +117,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&Credentials{},
 		&OTP{},
 		&Session{},
+		&UserProvider{},
 	)
 }

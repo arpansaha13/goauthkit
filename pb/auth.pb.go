@@ -27,6 +27,7 @@ type SignupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`       // User's email address
 	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"` // User's password (minimum 8 characters)
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`         // User's name
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -71,6 +72,13 @@ func (x *SignupRequest) GetEmail() string {
 func (x *SignupRequest) GetPassword() string {
 	if x != nil {
 		return x.Password
+	}
+	return ""
+}
+
+func (x *SignupRequest) GetName() string {
+	if x != nil {
+		return x.Name
 	}
 	return ""
 }
@@ -860,8 +868,9 @@ type UserData struct {
 	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`         // Bigint ID of the user
 	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`                          // User's email address
 	Username      string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`                    // User's username (auto-generated on verification)
-	Verified      bool                   `protobuf:"varint,4,opt,name=verified,proto3" json:"verified,omitempty"`                   // Whether user has verified email
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // User creation timestamp (UTC)
+	Name          string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`                            // User's name
+	Verified      bool                   `protobuf:"varint,5,opt,name=verified,proto3" json:"verified,omitempty"`                   // Whether user has verified email
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // User creation timestamp (UTC)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -913,6 +922,13 @@ func (x *UserData) GetEmail() string {
 func (x *UserData) GetUsername() string {
 	if x != nil {
 		return x.Username
+	}
+	return ""
+}
+
+func (x *UserData) GetName() string {
+	if x != nil {
+		return x.Name
 	}
 	return ""
 }
@@ -1235,10 +1251,11 @@ var File_auth_proto protoreflect.FileDescriptor
 const file_auth_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"auth.proto\x12\x05proto\x1a\x1fgoogle/protobuf/timestamp.proto\"A\n" +
+	"auth.proto\x12\x05proto\x1a\x1fgoogle/protobuf/timestamp.proto\"U\n" +
 	"\rSignupRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"E\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\"E\n" +
 	"\x0eSignupResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12\x19\n" +
 	"\botp_hash\x18\x02 \x01(\tR\aotpHash\"A\n" +
@@ -1278,14 +1295,15 @@ const file_auth_proto_rawDesc = "" +
 	"\x15ResetPasswordResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\")\n" +
 	"\x0eGetUserRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xac\x01\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xc0\x01\n" +
 	"\bUserData\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
-	"\busername\x18\x03 \x01(\tR\busername\x12\x1a\n" +
-	"\bverified\x18\x04 \x01(\bR\bverified\x129\n" +
+	"\busername\x18\x03 \x01(\tR\busername\x12\x12\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\x12\x1a\n" +
+	"\bverified\x18\x05 \x01(\bR\bverified\x129\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"6\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"6\n" +
 	"\x0fGetUserResponse\x12#\n" +
 	"\x04user\x18\x01 \x01(\v2\x0f.proto.UserDataR\x04user\"-\n" +
 	"\x15GetUserByEmailRequest\x12\x14\n" +

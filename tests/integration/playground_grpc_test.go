@@ -291,6 +291,7 @@ func (s *GRPCPlaygroundTestSuite) setupVerifiedUser(email, password string) (*do
 	user := &domain.User{
 		Email:    email,
 		Username: &username,
+		Name:     "Test User",
 		Verified: true,
 		Credentials: &domain.Credentials{
 			PasswordHash: hashedPassword,

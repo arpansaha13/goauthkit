@@ -47,6 +47,7 @@ service AuthService {
 message SignupRequest {
     string email = 1; // User's email address
     string password = 2; // User's password (minimum 8 characters)
+    string name = 3; // User's name
 }
 
 // SignupResponse returns confirmation message and newly created user_id.
@@ -141,8 +142,9 @@ message UserData {
     int64 user_id = 1; // Bigint ID of the user
     string email = 2; // User's email address
     string username = 3; // User's username (auto-generated on verification)
-    bool verified = 4; // Whether user has verified email
-    google.protobuf.Timestamp created_at = 5; // User creation timestamp (UTC)
+    string name = 4; // User's name
+    bool verified = 5; // Whether user has verified email
+    google.protobuf.Timestamp created_at = 6; // User creation timestamp (UTC)
 }
 
 // GetUserResponse returns user information.

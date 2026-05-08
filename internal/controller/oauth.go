@@ -10,13 +10,14 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 
+	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/internal/service"
 	"github.com/arpansaha13/gotoolkit/gtk"
 )
 
 // ProviderConfig holds configuration for an OAuth2/OIDC provider
 type ProviderConfig struct {
-	ID           string
+	ID           domain.ProviderType
 	ClientID     string
 	ClientSecret string
 	RedirectURI  string

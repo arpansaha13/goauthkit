@@ -46,8 +46,8 @@ type ISessionRepository interface {
 // IProviderRepository defines the interface for user provider repository operations
 type IProviderRepository interface {
 	Create(ctx context.Context, provider *domain.UserProvider) error
-	GetByProvider(ctx context.Context, providerID, providerSub string) (*domain.UserProvider, error)
-	UpdateLastLogin(ctx context.Context, providerID, providerSub string) error
+	GetByProvider(ctx context.Context, providerID domain.ProviderType, providerSub string) (*domain.UserProvider, error)
+	UpdateLastLogin(ctx context.Context, providerID domain.ProviderType, providerSub string) error
 }
 
 // Compile-time checks to ensure structs implement their interfaces

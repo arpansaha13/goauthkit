@@ -35,7 +35,7 @@ func (r *ProviderRepository) Create(ctx context.Context, provider *domain.UserPr
 }
 
 // GetByProvider retrieves a user provider entry
-func (r *ProviderRepository) GetByProvider(ctx context.Context, providerID, providerSub string) (*domain.UserProvider, error) {
+func (r *ProviderRepository) GetByProvider(ctx context.Context, providerID domain.ProviderType, providerSub string) (*domain.UserProvider, error) {
 	result, err := r.cb.Execute(func() (any, error) {
 		var provider domain.UserProvider
 		err := r.db.WithContext(ctx).
@@ -58,7 +58,7 @@ func (r *ProviderRepository) GetByProvider(ctx context.Context, providerID, prov
 }
 
 // UpdateLastLogin updates the last login timestamp for a provider
-func (r *ProviderRepository) UpdateLastLogin(ctx context.Context, providerID, providerSub string) error {
+func (r *ProviderRepository) UpdateLastLogin(ctx context.Context, providerID domain.ProviderType, providerSub string) error {
 	_, err := r.cb.Execute(func() (any, error) {
 		now := time.Now()
 		return nil, r.db.WithContext(ctx).

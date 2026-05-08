@@ -221,8 +221,8 @@ func (m *MockSessionRepository) IsTokenValid(ctx context.Context, tokenHash stri
 // MockProviderRepository is a mock implementation of IProviderRepository
 type MockProviderRepository struct {
 	CreateFunc          func(ctx context.Context, provider *domain.UserProvider) error
-	GetByProviderFunc   func(ctx context.Context, providerID, providerSub string) (*domain.UserProvider, error)
-	UpdateLastLoginFunc func(ctx context.Context, providerID, providerSub string) error
+	GetByProviderFunc   func(ctx context.Context, providerID domain.ProviderType, providerSub string) (*domain.UserProvider, error)
+	UpdateLastLoginFunc func(ctx context.Context, providerID domain.ProviderType, providerSub string) error
 }
 
 func (m *MockProviderRepository) Create(ctx context.Context, provider *domain.UserProvider) error {
@@ -232,14 +232,14 @@ func (m *MockProviderRepository) Create(ctx context.Context, provider *domain.Us
 	return nil
 }
 
-func (m *MockProviderRepository) GetByProvider(ctx context.Context, providerID, providerSub string) (*domain.UserProvider, error) {
+func (m *MockProviderRepository) GetByProvider(ctx context.Context, providerID domain.ProviderType, providerSub string) (*domain.UserProvider, error) {
 	if m.GetByProviderFunc != nil {
 		return m.GetByProviderFunc(ctx, providerID, providerSub)
 	}
 	return nil, nil
 }
 
-func (m *MockProviderRepository) UpdateLastLogin(ctx context.Context, providerID, providerSub string) error {
+func (m *MockProviderRepository) UpdateLastLogin(ctx context.Context, providerID domain.ProviderType, providerSub string) error {
 	if m.UpdateLastLoginFunc != nil {
 		return m.UpdateLastLoginFunc(ctx, providerID, providerSub)
 	}

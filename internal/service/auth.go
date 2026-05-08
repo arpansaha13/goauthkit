@@ -63,10 +63,11 @@ func NewAuthService(
 	}
 }
 
-// SignupRequest represents signup input with email and password
+// SignupRequest represents signup input with email, password and name
 type SignupRequest struct {
 	Email    string `json:"email"`    // User's email address
 	Password string `json:"password"` // User's password (minimum 8 characters)
+	Name     string `json:"name"`     // User's name
 }
 
 // SignupResponse represents signup output with confirmation message and OTP hash
@@ -99,6 +100,7 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 	newUser := &domain.User{
 		Email:    req.Email,
 		Verified: false,
+		Name:     req.Name,
 	}
 
 	credentials := &domain.Credentials{
@@ -250,11 +252,11 @@ type LoginResponse struct {
 
 // ExchangeOAuthCodeRequest represents OAuth callback input
 type ExchangeOAuthCodeRequest struct {
-	ProviderID string        `json:"provider_id"`
-	Code       string        `json:"code"`
-	RedirectURI string       `json:"redirect_uri"`
-	Nonce      string        `json:"nonce"`
-	OAuthConfig *oauth2.Config `json:"-"`
+	ProviderID  domain.ProviderType   `json:"provider_id"`
+	Code        string                `json:"code"`
+	RedirectURI string                `json:"redirect_uri"`
+	Nonce       string                `json:"nonce"`
+	OAuthConfig *oauth2.Config        `json:"-"`
 	Verifier    *oidc.IDTokenVerifier `json:"-"`
 }
 
@@ -330,7 +332,7 @@ func (s *AuthService) ExchangeOAuthCode(ctx context.Context, req ExchangeOAuthCo
 	newUser := &domain.User{
 		Email:    claims.Email,
 		Verified: true, // OAuth providers verify emails
-		GlobalName: claims.Name,
+		Name:     claims.Name,
 	}
 
 	// Create user with empty credentials (since it's OAuth-only for now)

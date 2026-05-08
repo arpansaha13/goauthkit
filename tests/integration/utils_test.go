@@ -66,7 +66,7 @@ func NewTestDB(ctx context.Context, db *gorm.DB) *TestDB {
 }
 
 // CreateTestUser creates a test user
-func (t *TestDB) CreateTestUser(email, password string, verified bool) (*domain.User, error) {
+func (t *TestDB) CreateTestUser(email, password, name string, verified bool) (*domain.User, error) {
 	hashedPassword, err := t.Hasher.Hash(password)
 	if err != nil {
 		return nil, err
@@ -75,6 +75,7 @@ func (t *TestDB) CreateTestUser(email, password string, verified bool) (*domain.
 	user := &domain.User{
 		Email:    email,
 		Verified: verified,
+		Name:     name,
 		Credentials: &domain.Credentials{
 			PasswordHash: hashedPassword,
 		},

@@ -16,7 +16,7 @@ func TestValidator_ValidateStructs(t *testing.T) {
 			payload SignupPayload
 			wantErr bool
 		}{
-			{"Valid payload", SignupPayload{Email: "test@example.com", Password: "password123"}, false},
+			{"Valid payload", SignupPayload{Email: "test@example.com", Password: "password123", Name: "Test User"}, false},
 			{"Invalid email", SignupPayload{Email: "wrong-email", Password: "password123"}, true},
 			{"Password too short", SignupPayload{Email: "test@example.com", Password: "123"}, true},
 			{"Missing fields", SignupPayload{}, true},

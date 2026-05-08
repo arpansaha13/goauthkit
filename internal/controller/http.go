@@ -35,6 +35,7 @@ func NewSignupController(authService service.IAuthService, validator *utils.Vali
 		req := service.SignupRequest{
 			Email:    payload.Email,
 			Password: payload.Password,
+			Name:     payload.Name,
 		}
 
 		resp, err := authService.Signup(r.Context(), req)
