@@ -329,16 +329,25 @@ func (s *AuthService) ExchangeOAuthCode(ctx context.Context, req ExchangeOAuthCo
 	}
 
 	// 3. User does not exist -> Create new user and link provider
+	emailPrefix := utils.GetEmailPrefix(claims.Email)
+	username, err := s.generateUniqueUsername(ctx, emailPrefix)
+	if err != nil {
+		return nil, err
+	}
+
 	newUser := &domain.User{
 		Email:    claims.Email,
+		Username: &username,
 		Verified: true, // OAuth providers verify emails
 		Name:     claims.Name,
 	}
+
 
 	// Create user with empty credentials (since it's OAuth-only for now)
 	if err := s.userRepo.Create(ctx, newUser, &domain.Credentials{}); err != nil {
 		return nil, &gtk.InternalError{Message: "failed to create user", Err: err}
 	}
+
 
 	// Link provider
 	providerLink = &domain.UserProvider{
