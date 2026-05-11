@@ -142,7 +142,7 @@ message UserData {
     int64 user_id = 1; // Bigint ID of the user
     string email = 2; // User's email address
     string username = 3; // User's username (auto-generated on verification)
-    string name = 4; // User's name
+    reserved 4; // name removed, now in user service
     bool verified = 5; // Whether user has verified email
     google.protobuf.Timestamp created_at = 6; // User creation timestamp (UTC)
 }

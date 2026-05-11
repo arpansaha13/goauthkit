@@ -35,7 +35,6 @@ type AuthService struct {
 // UserCreatedEvent encapsulates data for the user creation hook
 type UserCreatedEvent struct {
 	UserID int64
-	Name   string
 }
 
 // AuthServiceHooks contains optional callbacks for auth service lifecycle events
@@ -81,7 +80,6 @@ func NewAuthService(
 type SignupRequest struct {
 	Email    string `json:"email"`    // User's email address
 	Password string `json:"password"` // User's password (minimum 8 characters)
-	Name     string `json:"name"`     // User's name
 }
 
 // SignupResponse represents signup output with confirmation message and OTP hash
@@ -114,7 +112,6 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 	newUser := &domain.User{
 		Email:    req.Email,
 		Verified: false,
-		Name:     req.Name,
 	}
 
 	credentials := &domain.Credentials{
@@ -129,7 +126,6 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 	if s.hooks != nil && s.hooks.OnUserCreated != nil {
 		_ = s.hooks.OnUserCreated(ctx, UserCreatedEvent{
 			UserID: newUser.ID,
-			Name:   newUser.Name,
 		})
 	}
 
@@ -361,7 +357,6 @@ func (s *AuthService) ExchangeOAuthCode(ctx context.Context, req ExchangeOAuthCo
 		Email:    claims.Email,
 		Username: &username,
 		Verified: true, // OAuth providers verify emails
-		Name:     claims.Name,
 	}
 
 
@@ -374,7 +369,6 @@ func (s *AuthService) ExchangeOAuthCode(ctx context.Context, req ExchangeOAuthCo
 	if s.hooks != nil && s.hooks.OnUserCreated != nil {
 		_ = s.hooks.OnUserCreated(ctx, UserCreatedEvent{
 			UserID: newUser.ID,
-			Name:   newUser.Name,
 		})
 	}
 

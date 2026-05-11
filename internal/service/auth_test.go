@@ -113,7 +113,7 @@ func TestAuthService_Signup(t *testing.T) {
 				SecretKey:  "secret",
 				EmailPool:  emailPool,
 			}
-			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, nil, hasher, config)
+			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, nil, hasher, config, nil)
 			resp, err := svc.Signup(context.Background(), service.SignupRequest{Email: tt.email, Password: tt.password})
 
 			if tt.expectedError {
@@ -209,7 +209,7 @@ func TestAuthService_Login(t *testing.T) {
 				SessionTTL: time.Hour * 24,
 				SecretKey:  "secret",
 			}
-			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, nil, hasher, config)
+			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, nil, hasher, config, nil)
 			resp, err := svc.Login(context.Background(), service.LoginRequest{Email: tt.email, Password: tt.password})
 
 			if tt.expectedError {
@@ -291,7 +291,7 @@ func TestAuthService_ValidateSession(t *testing.T) {
 				SessionTTL: time.Hour * 24,
 				SecretKey:  "secret",
 			}
-			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, nil, hasher, config)
+			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, nil, hasher, config, nil)
 			resp, err := svc.ValidateSession(context.Background(), service.ValidateSessionRequest{Token: tt.token})
 
 			if tt.expectedError {

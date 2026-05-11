@@ -111,6 +111,7 @@ func main() {
 			SecretKey:  cfg.SecretKey,
 			EmailPool:  emailPool,
 		},
+		nil,
 	)
 
 	// Create gRPC server with chained interceptors

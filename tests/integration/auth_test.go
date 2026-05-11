@@ -17,7 +17,6 @@ func (s *AuthIntegrationTestSuite) TestSignup() {
 				payload := pkg.SignupRequest{
 					Email:    "signup@example.com",
 					Password: "Password123!",
-					Name:     "Test User",
 				}
 				resp, err := f.HTTPClient.POST("/api/auth/signup", payload)
 				if err != nil {
@@ -33,7 +32,6 @@ func (s *AuthIntegrationTestSuite) TestSignup() {
 				payload := pkg.SignupRequest{
 					Email:    "invalid-email",
 					Password: "Password123!",
-					Name:     "Test User",
 				}
 				resp, err := f.HTTPClient.POST("/api/auth/signup", payload)
 				if err != nil {
@@ -64,7 +62,7 @@ func (s *AuthIntegrationTestSuite) TestLogin() {
 		{
 			Name: "Successful Login",
 			Setup: func(f *TestFixture) error {
-				_, err := f.TestDB.CreateTestUser("login@example.com", "Password123!", "Test User", true)
+				_, err := f.TestDB.CreateTestUser("login@example.com", "Password123!", true)
 				return err
 			},
 			Test: func(f *TestFixture) error {
@@ -96,7 +94,7 @@ func (s *AuthIntegrationTestSuite) TestLogin() {
 		{
 			Name: "Invalid Credentials",
 			Setup: func(f *TestFixture) error {
-				_, err := f.TestDB.CreateTestUser("wrong@example.com", "Password123!", "Test User", true)
+				_, err := f.TestDB.CreateTestUser("wrong@example.com", "Password123!", true)
 				return err
 			},
 			Test: func(f *TestFixture) error {
@@ -115,7 +113,7 @@ func (s *AuthIntegrationTestSuite) TestLogin() {
 		{
 			Name: "Unverified User",
 			Setup: func(f *TestFixture) error {
-				_, err := f.TestDB.CreateTestUser("unverified@example.com", "Password123!", "Test User", false)
+				_, err := f.TestDB.CreateTestUser("unverified@example.com", "Password123!", false)
 				return err
 			},
 			Test: func(f *TestFixture) error {
@@ -152,7 +150,7 @@ func (s *AuthIntegrationTestSuite) TestVerifyOTP() {
 		{
 			Name: "Successful Verification",
 			Test: func(f *TestFixture) error {
-				user, _ := f.TestDB.CreateTestUser("verify@example.com", "Password123!", "Test User", false)
+				user, _ := f.TestDB.CreateTestUser("verify@example.com", "Password123!", false)
 				code := "123456"
 				otpHash, _ := f.TestDB.CreateTestOTP(user.ID, code)
 
@@ -171,7 +169,7 @@ func (s *AuthIntegrationTestSuite) TestVerifyOTP() {
 		{
 			Name: "Invalid Code",
 			Test: func(f *TestFixture) error {
-				user, _ := f.TestDB.CreateTestUser("invalid-code@example.com", "Password123!", "Test User", false)
+				user, _ := f.TestDB.CreateTestUser("invalid-code@example.com", "Password123!", false)
 				otpHash, _ := f.TestDB.CreateTestOTP(user.ID, "123456")
 
 				payload := pkg.VerifyOTPRequest{
@@ -207,7 +205,7 @@ func (s *AuthIntegrationTestSuite) TestLogout() {
 		{
 			Name: "Successful Logout",
 			Test: func(f *TestFixture) error {
-				user, _ := f.TestDB.CreateTestUser("logout@example.com", "Password123!", "Test User", true)
+				user, _ := f.TestDB.CreateTestUser("logout@example.com", "Password123!", true)
 				token, _ := f.TestDB.CreateTestSession(user.ID)
 				cookie := &http.Cookie{
 					Name:  "test_session",

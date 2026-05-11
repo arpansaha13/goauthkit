@@ -171,6 +171,7 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 			SecretKey:  "test-secret-key-at-least-32-characters-long-ok",
 			EmailPool:  s.EmailPool,
 		},
+		nil,
 	)
 
 	// Use pkg exports for controller (this demonstrates playground usage)
@@ -291,7 +292,6 @@ func (s *GRPCPlaygroundTestSuite) setupVerifiedUser(email, password string) (*do
 	user := &domain.User{
 		Email:    email,
 		Username: &username,
-		Name:     "Test User",
 		Verified: true,
 		Credentials: &domain.Credentials{
 			PasswordHash: hashedPassword,

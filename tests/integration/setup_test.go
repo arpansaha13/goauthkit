@@ -114,6 +114,7 @@ func (s *AuthIntegrationTestSuite) setupHTTPServer(db *gorm.DB) {
 			SecretKey:  "test-secret-key-at-least-32-characters-long-ok",
 			EmailPool:  s.EmailPool,
 		},
+		nil,
 	)
 
 	validator := pkg.NewValidator()

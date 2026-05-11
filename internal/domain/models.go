@@ -18,7 +18,6 @@ type User struct {
 	ID        int64   `gorm:"primaryKey;autoIncrement"`
 	Email     string  `gorm:"type:varchar(255);uniqueIndex;not null"`
 	Username   *string `gorm:"type:varchar(100);uniqueIndex"`
-	Name      string  `gorm:"type:varchar(100)"`
 	Verified   bool    `gorm:"default:false;not null"`
 	LastLogin *time.Time
 	CreatedAt time.Time

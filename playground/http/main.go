@@ -102,6 +102,7 @@ func main() {
 			SecretKey:  cfg.SecretKey,
 			EmailPool:  emailPool,
 		},
+		nil,
 	)
 
 	// Setup HTTP routes
