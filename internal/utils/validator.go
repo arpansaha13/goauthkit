@@ -21,8 +21,10 @@ func NewValidator() *Validator {
 
 // SignupRequest validation
 type SignupPayload struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=8"`
+	Email           string `json:"email" validate:"required,email"`
+	GlobalName      string `json:"globalName" validate:"required,min=1,max=20"`
+	Password        string `json:"password" validate:"required,min=8,max=30"`
+	ConfirmPassword string `json:"confirmPassword" validate:"required,eqfield=Password"`
 }
 
 // LoginRequest validation
@@ -49,8 +51,8 @@ func (v *Validator) ValidateEmail(email string) error {
 
 // ValidatePassword validates a password string
 func (v *Validator) ValidatePassword(password string) error {
-	if err := v.validate.Var(password, "required,min=8"); err != nil {
-		return fmt.Errorf("password must be at least 8 characters")
+	if err := v.validate.Var(password, "required,min=8,max=30"); err != nil {
+		return fmt.Errorf("password must be between 8 and 30 characters")
 	}
 	return nil
 }

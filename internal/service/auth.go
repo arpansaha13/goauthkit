@@ -34,7 +34,8 @@ type AuthService struct {
 
 // UserCreatedEvent encapsulates data for the user creation hook
 type UserCreatedEvent struct {
-	UserID int64
+	UserID     int64
+	GlobalName string
 }
 
 // AuthServiceHooks contains optional callbacks for auth service lifecycle events
@@ -76,10 +77,11 @@ func NewAuthService(
 	}
 }
 
-// SignupRequest represents signup input with email, password and name
+// SignupRequest represents signup input with email, password and global name
 type SignupRequest struct {
-	Email    string `json:"email"`    // User's email address
-	Password string `json:"password"` // User's password (minimum 8 characters)
+	Email      string `json:"email"`       // User's email address
+	Password   string `json:"password"`    // User's password (8-30 characters)
+	GlobalName string `json:"globalName"` // User's display name
 }
 
 // SignupResponse represents signup output with confirmation message and OTP hash
@@ -125,7 +127,8 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 	// Trigger OnUserCreated hook
 	if s.hooks != nil && s.hooks.OnUserCreated != nil {
 		_ = s.hooks.OnUserCreated(ctx, UserCreatedEvent{
-			UserID: newUser.ID,
+			UserID:     newUser.ID,
+			GlobalName: req.GlobalName,
 		})
 	}
 
