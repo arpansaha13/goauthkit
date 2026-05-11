@@ -29,6 +29,18 @@ type AuthService struct {
 	sessionCache cache.ISessionCache
 	hasher       *utils.PasswordHasher
 	config       AuthServiceConfig
+	hooks        *AuthServiceHooks
+}
+
+// UserCreatedEvent encapsulates data for the user creation hook
+type UserCreatedEvent struct {
+	UserID int64
+	Name   string
+}
+
+// AuthServiceHooks contains optional callbacks for auth service lifecycle events
+type AuthServiceHooks struct {
+	OnUserCreated func(ctx context.Context, event UserCreatedEvent) error
 }
 
 // AuthServiceConfig holds configuration for the auth service
@@ -51,6 +63,7 @@ func NewAuthService(
 	sessionCache cache.ISessionCache,
 	hasher *utils.PasswordHasher,
 	config AuthServiceConfig,
+	hooks *AuthServiceHooks,
 ) *AuthService {
 	return &AuthService{
 		userRepo:     userRepo,
@@ -60,6 +73,7 @@ func NewAuthService(
 		sessionCache: sessionCache,
 		hasher:       hasher,
 		config:       config,
+		hooks:        hooks,
 	}
 }
 
@@ -109,6 +123,14 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 
 	if err := s.userRepo.Create(ctx, newUser, credentials); err != nil {
 		return nil, &gtk.InternalError{Message: "failed to create user", Err: err}
+	}
+
+	// Trigger OnUserCreated hook
+	if s.hooks != nil && s.hooks.OnUserCreated != nil {
+		_ = s.hooks.OnUserCreated(ctx, UserCreatedEvent{
+			UserID: newUser.ID,
+			Name:   newUser.Name,
+		})
 	}
 
 	// Generate and send OTP
@@ -346,6 +368,14 @@ func (s *AuthService) ExchangeOAuthCode(ctx context.Context, req ExchangeOAuthCo
 	// Create user with empty credentials (since it's OAuth-only for now)
 	if err := s.userRepo.Create(ctx, newUser, &domain.Credentials{}); err != nil {
 		return nil, &gtk.InternalError{Message: "failed to create user", Err: err}
+	}
+
+	// Trigger OnUserCreated hook for new OAuth registration
+	if s.hooks != nil && s.hooks.OnUserCreated != nil {
+		_ = s.hooks.OnUserCreated(ctx, UserCreatedEvent{
+			UserID: newUser.ID,
+			Name:   newUser.Name,
+		})
 	}
 
 

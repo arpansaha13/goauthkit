@@ -85,6 +85,8 @@ type IAuthService = isvc.IAuthService
 // Service implementations
 type AuthService = isvc.AuthService
 type AuthServiceConfig = isvc.AuthServiceConfig
+type UserCreatedEvent = isvc.UserCreatedEvent
+type AuthServiceHooks = isvc.AuthServiceHooks
 
 // Request/Response types
 type SignupRequest = isvc.SignupRequest
@@ -127,8 +129,9 @@ func NewAuthService(
 	sessionCache ISessionCache,
 	hasher *PasswordHasher,
 	config AuthServiceConfig,
+	hooks *AuthServiceHooks,
 ) IAuthService {
-	return isvc.NewAuthService(userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher, config)
+	return isvc.NewAuthService(userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher, config, hooks)
 }
 
 // ============================================================================
