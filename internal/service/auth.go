@@ -371,7 +371,8 @@ func (s *AuthService) ExchangeOAuthCode(ctx context.Context, req ExchangeOAuthCo
 	// Trigger OnUserCreated hook for new OAuth registration
 	if s.hooks != nil && s.hooks.OnUserCreated != nil {
 		_ = s.hooks.OnUserCreated(ctx, UserCreatedEvent{
-			UserID: newUser.ID,
+			UserID:     newUser.ID,
+			GlobalName: claims.Name,
 		})
 	}
 
