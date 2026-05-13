@@ -80,6 +80,7 @@ func (p *MockEmailProvider) SendEmail(ctx context.Context, email, subject, body 
 	p.sentEmails = append(p.sentEmails, sentEmail)
 
 	zap.L().Info("mock email sent", zap.String("to", email), zap.String("subject", subject))
+	zap.L().Debug("mock email body", zap.String("body", body))
 
 	return nil
 }
