@@ -35,8 +35,8 @@ type LoginPayload struct {
 
 // VerifyOTPRequest validation
 type VerifyOTPPayload struct {
-	OtpHash string `json:"otp_hash" validate:"required,hexadecimal,len=64"`
-	Code    string `json:"code" validate:"required,len=6,numeric"`
+	Hash string `json:"hash" validate:"required,hexadecimal,len=64"`
+	Code string `json:"code" validate:"required,len=6,numeric"`
 }
 
 // Validate validates a struct

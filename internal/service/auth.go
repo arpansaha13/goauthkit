@@ -87,7 +87,7 @@ type SignupRequest struct {
 // SignupResponse represents signup output with confirmation message and OTP hash
 type SignupResponse struct {
 	Message string `json:"message"`
-	OTPHash string `json:"otp_hash"`
+	Hash    string `json:"otpHash"`
 }
 
 // Signup registers a new user with email and password.
@@ -172,14 +172,14 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 
 	return &SignupResponse{
 		Message: "signup successful, check your email for otp",
-		OTPHash: otpRecord.OTPHash,
+		Hash:    otpRecord.OTPHash,
 	}, nil
 }
 
-// VerifyOTPRequest represents OTP verification input with OTP hash and OTP code
+// VerifyOTPRequest represents the input for OTP verification
 type VerifyOTPRequest struct {
-	OTPHash string `json:"otp_hash"` // Unique OTP hash received during signup
-	Code    string `json:"code"`     // 6-digit OTP code from email
+	Hash string `json:"hash"`
+	Code string `json:"code"`
 }
 
 // VerifyOTPResponse represents OTP verification output with username, OTP hash, and initial session
@@ -194,12 +194,12 @@ type VerifyOTPResponse struct {
 // VerifyOTP verifies the OTP code sent to user's email and marks user as verified.
 // ...
 func (s *AuthService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*VerifyOTPResponse, error) {
-	if req.OTPHash == "" {
-		return nil, &gtk.ValidationError{Message: "otp hash is required", Field: "otp_hash"}
+	if req.Hash == "" {
+		return nil, &gtk.ValidationError{Message: "otp hash is required", Field: "hash"}
 	}
 
 	// Get OTP by hash and purpose (signup verification)
-	otpRecord, err := s.otpRepo.GetByOTPHash(ctx, req.OTPHash, domain.OTPPurposeSignupVerification)
+	otpRecord, err := s.otpRepo.GetByOTPHash(ctx, req.Hash, domain.OTPPurposeSignupVerification)
 	if err != nil {
 		return nil, err
 	}
