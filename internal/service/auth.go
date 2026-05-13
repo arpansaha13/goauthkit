@@ -87,7 +87,7 @@ type SignupRequest struct {
 // SignupResponse represents signup output with confirmation message and OTP hash
 type SignupResponse struct {
 	Message string `json:"message"`
-	OTPHash string `json:"otp_hash"`
+	OTPHash string `json:"otpHash"`
 }
 
 // Signup registers a new user with email and password.
@@ -176,10 +176,10 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 	}, nil
 }
 
-// VerifyOTPRequest represents OTP verification input with OTP hash and OTP code
+// VerifyOTPRequest represents the input for OTP verification
 type VerifyOTPRequest struct {
-	OTPHash string `json:"otp_hash"` // Unique OTP hash received during signup
-	Code    string `json:"code"`     // 6-digit OTP code from email
+	OTPHash string `json:"otpHash"`
+	Code    string `json:"code"`
 }
 
 // VerifyOTPResponse represents OTP verification output with username, OTP hash, and initial session
@@ -195,7 +195,7 @@ type VerifyOTPResponse struct {
 // ...
 func (s *AuthService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*VerifyOTPResponse, error) {
 	if req.OTPHash == "" {
-		return nil, &gtk.ValidationError{Message: "otp hash is required", Field: "otp_hash"}
+		return nil, &gtk.ValidationError{Message: "otp hash is required", Field: "otpHash"}
 	}
 
 	// Get OTP by hash and purpose (signup verification)

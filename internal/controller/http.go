@@ -8,6 +8,7 @@ import (
 	"github.com/arpansaha13/goauthkit/internal/service"
 	"github.com/arpansaha13/goauthkit/internal/utils"
 	"github.com/arpansaha13/gotoolkit/gtk"
+	"github.com/gorilla/mux"
 )
 
 // CookieConfig holds settings for session cookies
@@ -90,11 +91,21 @@ func NewVerifyOTPController(authService service.IAuthService, validator *utils.V
 		}
 
 		if err := validator.Validate(payload); err != nil {
-			return nil, &gtk.ValidationError{Message: err.Error()}
+			// If validation failed, check if hash is in URL params
+			vars := mux.Vars(r)
+			if vars["otpHash"] != "" {
+				payload.OTPHash = vars["otpHash"]
+				// Re-validate
+				if err := validator.Validate(payload); err != nil {
+					return nil, &gtk.ValidationError{Message: err.Error()}
+				}
+			} else {
+				return nil, &gtk.ValidationError{Message: err.Error()}
+			}
 		}
 
 		req := service.VerifyOTPRequest{
-			OTPHash: payload.OtpHash,
+			OTPHash: payload.OTPHash,
 			Code:    payload.Code,
 		}
 
@@ -103,12 +114,6 @@ func NewVerifyOTPController(authService service.IAuthService, validator *utils.V
 			return nil, err
 		}
 
-		// Calculate expiry (SessionTTL is in authService config, but we can use a reasonable default or pass it)
-		// Actually, VerifyOTPResponse should ideally return ExpiresAt. Let's check service.VerifyOTPResponse.
-		// It doesn't. But we know session is created.
-		// For now, I'll use a fixed duration if not available, or I should update service.VerifyOTPResponse.
-		// Let's check service.VerifyOTPResponse in internal/service/auth.go again.
-		
 		setSessionCookie(w, cookieConfig, resp.SessionToken, resp.ExpiresAt)
 
 		return &gtk.ControllerResponse{
