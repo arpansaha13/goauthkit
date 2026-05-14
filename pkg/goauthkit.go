@@ -178,11 +178,11 @@ func NewProviderRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) IProv
 type ISessionCache = iccache.ISessionCache
 
 // Cache implementations
-type SessionCache = iccache.SessionCache
+type MemcachedSessionCache = iccache.MemcachedSessionCache
 
-// NewSessionCache creates a new session cache backed by memcached client wrapper
-func NewSessionCache(client *gtk.MemcachedClient, cb *gobreaker.CircuitBreaker[any]) ISessionCache {
-	return iccache.NewSessionCache(client, cb)
+// NewMemcachedSessionCache creates a new session cache backed by memcached client wrapper
+func NewMemcachedSessionCache(client *gtk.MemcachedClient, cb *gobreaker.CircuitBreaker[any]) ISessionCache {
+	return iccache.NewMemcachedSessionCache(client, cb)
 }
 
 // ============================================================================

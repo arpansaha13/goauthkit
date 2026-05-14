@@ -14,23 +14,23 @@ import (
 	"github.com/arpansaha13/goauthkit/internal/domain"
 )
 
-// SessionCache implements ISessionCache using memcached as the backend with circuit breaker protection.
-type SessionCache struct {
+// MemcachedSessionCache implements ISessionCache using memcached as the backend with circuit breaker protection.
+type MemcachedSessionCache struct {
 	client *gtk.MemcachedClient
 	cb     *gobreaker.CircuitBreaker[any]
 }
 
-// NewSessionCache creates a new session cache with memcached client wrapper and circuit breaker.
+// NewMemcachedSessionCache creates a new session cache with memcached client wrapper and circuit breaker.
 // If either client or circuit breaker is nil, operations become no-ops (graceful degradation).
-func NewSessionCache(client *gtk.MemcachedClient, cb *gobreaker.CircuitBreaker[any]) *SessionCache {
-	return &SessionCache{
+func NewMemcachedSessionCache(client *gtk.MemcachedClient, cb *gobreaker.CircuitBreaker[any]) *MemcachedSessionCache {
+	return &MemcachedSessionCache{
 		client: client,
 		cb:     cb,
 	}
 }
 
 // GetSessionByToken retrieves a full session from cache by token hash.
-func (c *SessionCache) GetSessionByToken(ctx context.Context, tokenHash string) (*domain.Session, error) {
+func (c *MemcachedSessionCache) GetSessionByToken(ctx context.Context, tokenHash string) (*domain.Session, error) {
 	if c.client == nil || c.cb == nil {
 		return nil, &gtk.NotFoundError{Message: "cache not available"}
 	}
@@ -67,7 +67,7 @@ func (c *SessionCache) GetSessionByToken(ctx context.Context, tokenHash string) 
 }
 
 // IsTokenValid checks if a token is valid in cache (exists, not expired, not deleted).
-func (c *SessionCache) IsTokenValid(ctx context.Context, tokenHash string) (bool, int64, error) {
+func (c *MemcachedSessionCache) IsTokenValid(ctx context.Context, tokenHash string) (bool, int64, error) {
 	if c.client == nil || c.cb == nil {
 		// Cache not available, return cache miss - caller will use database
 		return false, 0, &gtk.NotFoundError{Message: "cache not available"}
@@ -110,7 +110,7 @@ func (c *SessionCache) IsTokenValid(ctx context.Context, tokenHash string) (bool
 
 // SetSession stores a session in cache with a TTL.
 // Errors are logged but not fatal - cache operations are best-effort.
-func (c *SessionCache) SetSession(ctx context.Context, tokenHash string, session *domain.Session, ttl time.Duration) error {
+func (c *MemcachedSessionCache) SetSession(ctx context.Context, tokenHash string, session *domain.Session, ttl time.Duration) error {
 	if c.client == nil || c.cb == nil {
 		return nil // Cache not available, no-op
 	}
@@ -171,7 +171,7 @@ func (c *SessionCache) SetSession(ctx context.Context, tokenHash string, session
 
 // InvalidateSessionToken removes a session token from cache.
 // Errors are logged but not fatal - cache operations are best-effort.
-func (c *SessionCache) InvalidateSessionToken(ctx context.Context, tokenHash string) error {
+func (c *MemcachedSessionCache) InvalidateSessionToken(ctx context.Context, tokenHash string) error {
 	if c.client == nil || c.cb == nil {
 		return nil // Cache not available, no-op
 	}

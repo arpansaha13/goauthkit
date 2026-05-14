@@ -28,5 +28,5 @@ type ISessionCache interface {
 	InvalidateSessionToken(ctx context.Context, tokenHash string) error
 }
 
-// Compile-time check to ensure SessionCache implements ISessionCache
-var _ ISessionCache = (*SessionCache)(nil)
+// Compile-time check to ensure MemcachedSessionCache implements ISessionCache
+var _ ISessionCache = (*MemcachedSessionCache)(nil)

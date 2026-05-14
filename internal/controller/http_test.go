@@ -31,8 +31,10 @@ func TestSignupValidation(t *testing.T) {
 		{
 			Name: "Valid signup request",
 			Body: map[string]string{
-				"email":    "test@example.com",
-				"password": "securePassword123",
+				"email":           "test@example.com",
+				"password":        "securePassword123",
+				"globalName":      "Test User",
+				"confirmPassword": "securePassword123",
 			},
 			ExpectedError: false,
 			MockFunc: func(ctx context.Context, req service.SignupRequest) (*service.SignupResponse, error) {
@@ -120,8 +122,8 @@ func TestVerifyOTPValidation(t *testing.T) {
 		{
 			Name: "Valid verify OTP request",
 			Body: map[string]string{
-				"otp_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-				"code":     "123456",
+				"otpHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+				"code":    "123456",
 			},
 			ExpectedError: false,
 			MockFunc: func(ctx context.Context, req service.VerifyOTPRequest) (*service.VerifyOTPResponse, error) {
@@ -136,7 +138,7 @@ func TestVerifyOTPValidation(t *testing.T) {
 		{
 			Name: "Missing OTP hash",
 			Body: map[string]string{
-				"otp_hash": "",
+				"otpHash": "",
 				"code":     "123456",
 			},
 			ExpectedError: true,
@@ -145,8 +147,8 @@ func TestVerifyOTPValidation(t *testing.T) {
 		{
 			Name: "Missing OTP code",
 			Body: map[string]string{
-				"otp_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-				"code":     "",
+				"otpHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+				"code":    "",
 			},
 			ExpectedError: true,
 			ErrorType:     (*gtk.ValidationError)(nil),
@@ -154,7 +156,7 @@ func TestVerifyOTPValidation(t *testing.T) {
 		{
 			Name: "Invalid OTP hash length",
 			Body: map[string]string{
-				"otp_hash": "invalid-length",
+				"otpHash": "invalid-length",
 				"code":     "123456",
 			},
 			ExpectedError: true,
@@ -303,8 +305,10 @@ func TestSignupErrorHandling(t *testing.T) {
 		{
 			Name: "Service returns conflict error",
 			Body: map[string]string{
-				"email":    "test@example.com",
-				"password": "securePassword123",
+				"email":           "test@example.com",
+				"password":        "securePassword123",
+				"globalName":      "Test User",
+				"confirmPassword": "securePassword123",
 			},
 			ExpectedError: true,
 			ErrorType:     (*gtk.ConflictError)(nil),
@@ -315,8 +319,10 @@ func TestSignupErrorHandling(t *testing.T) {
 		{
 			Name: "Service returns validation error",
 			Body: map[string]string{
-				"email":    "test@example.com",
-				"password": "securePassword123",
+				"email":           "test@example.com",
+				"password":        "securePassword123",
+				"globalName":      "Test User",
+				"confirmPassword": "securePassword123",
 			},
 			ExpectedError: true,
 			ErrorType:     (*gtk.ValidationError)(nil),
@@ -327,8 +333,10 @@ func TestSignupErrorHandling(t *testing.T) {
 		{
 			Name: "Service returns internal error",
 			Body: map[string]string{
-				"email":    "test@example.com",
-				"password": "securePassword123",
+				"email":           "test@example.com",
+				"password":        "securePassword123",
+				"globalName":      "Test User",
+				"confirmPassword": "securePassword123",
 			},
 			ExpectedError: true,
 			ErrorType:     (*gtk.InternalError)(nil),

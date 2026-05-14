@@ -16,9 +16,9 @@ func TestValidator_ValidateStructs(t *testing.T) {
 			payload SignupPayload
 			wantErr bool
 		}{
-			{"Valid payload", SignupPayload{Email: "test@example.com", Password: "password123"}, false},
+			{"Valid payload", SignupPayload{Email: "test@example.com", Password: "password123", GlobalName: "Test User", ConfirmPassword: "password123"}, false},
 			{"Invalid email", SignupPayload{Email: "wrong-email", Password: "password123"}, true},
-			{"Password too short", SignupPayload{Email: "test@example.com", Password: "123"}, true},
+			{"Password too short", SignupPayload{Email: "test@example.com", Password: "123", GlobalName: "Test User", ConfirmPassword: "123"}, true},
 			{"Missing fields", SignupPayload{}, true},
 		}
 
@@ -40,11 +40,11 @@ func TestValidator_ValidateStructs(t *testing.T) {
 			payload VerifyOTPPayload
 			wantErr bool
 		}{
-			{"Valid hex hash and 6-digit code", VerifyOTPPayload{OtpHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "123456"}, false},
-			{"Invalid hash length", VerifyOTPPayload{OtpHash: "not-a-64-char-hex-string", Code: "123456"}, true},
-			{"Invalid hex characters in hash", VerifyOTPPayload{OtpHash: "zz23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "123456"}, true},
-			{"Code too short", VerifyOTPPayload{OtpHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "123"}, true},
-			{"Code non-numeric", VerifyOTPPayload{OtpHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "abc123"}, true},
+			{"Valid hex hash and 6-digit code", VerifyOTPPayload{OTPHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "123456"}, false},
+			{"Invalid hash length", VerifyOTPPayload{OTPHash: "not-a-64-char-hex-string", Code: "123456"}, true},
+			{"Invalid hex characters in hash", VerifyOTPPayload{OTPHash: "zz23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "123456"}, true},
+			{"Code too short", VerifyOTPPayload{OTPHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "123"}, true},
+			{"Code non-numeric", VerifyOTPPayload{OTPHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", Code: "abc123"}, true},
 		}
 
 		for _, tt := range tests {
@@ -72,7 +72,7 @@ func TestValidator_StandaloneMethods(t *testing.T) {
 		assert.NoError(t, v.ValidatePassword("longenoughpassword"))
 		err := v.ValidatePassword("short")
 		assert.Error(t, err)
-		assert.Equal(t, "password must be at least 8 characters", err.Error())
+		assert.Equal(t, "password must be between 8 and 30 characters", err.Error())
 	})
 
 	t.Run("ValidateOTPCode", func(t *testing.T) {

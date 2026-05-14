@@ -52,7 +52,7 @@ func main() {
 	// Initialize session cache (optional - can be nil for database-only mode)
 	var sessionCache pkg.ISessionCache
 	// For now, we skip memcached in playground - pass nil to use database-only mode
-	// To enable memcached: initialize memcache.Client and pass it to pkg.NewSessionCache
+	// To enable memcached: initialize memcache.Client and pass it to pkg.NewMemcachedSessionCache
 	sessionCache = nil
 
 	// Initialize repositories
