@@ -13,7 +13,7 @@ import (
 
 	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/pb"
-	"github.com/arpansaha13/goauthkit/pkg"
+	"github.com/arpansaha13/goauthkit"
 	"gorm.io/gorm"
 )
 
@@ -53,7 +53,7 @@ func NewTestFixture(t *testing.T, db *gorm.DB, httpServerAddr string, authClient
 type TestDB struct {
 	Ctx      context.Context
 	DB       *gorm.DB
-	Hasher   *pkg.PasswordHasher
+	Hasher   *goauthkit.PasswordHasher
 }
 
 // NewTestDB creates a new test database wrapper
@@ -61,7 +61,7 @@ func NewTestDB(ctx context.Context, db *gorm.DB) *TestDB {
 	return &TestDB{
 		Ctx:    ctx,
 		DB:     db,
-		Hasher: pkg.NewPasswordHasher(),
+		Hasher: goauthkit.NewPasswordHasher(),
 	}
 }
 
@@ -89,7 +89,7 @@ func (t *TestDB) CreateTestUser(email, password string, verified bool) (*domain.
 
 // CreateTestOTP creates a test OTP
 func (t *TestDB) CreateTestOTP(userID int64, code string) (string, error) {
-	otpHash, _ := pkg.GenerateToken(32)
+	otpHash, _ := goauthkit.GenerateToken(32)
 	hashedCode, err := t.Hasher.Hash(code)
 	if err != nil {
 		return "", err
@@ -112,7 +112,7 @@ func (t *TestDB) CreateTestOTP(userID int64, code string) (string, error) {
 
 // CreateTestSession creates a test session
 func (t *TestDB) CreateTestSession(userID int64) (string, error) {
-	token, _ := pkg.GenerateToken(32)
+	token, _ := goauthkit.GenerateToken(32)
 	// Hash token using the same logic as AuthService (token + secret)
 	// We use "test-secret" in setup_test.go
 	hasher := sha256.New()

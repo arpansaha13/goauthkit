@@ -23,7 +23,7 @@ import (
 	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/internal/middleware"
 	"github.com/arpansaha13/goauthkit/pb"
-	"github.com/arpansaha13/goauthkit/pkg"
+	"github.com/arpansaha13/goauthkit"
 	"github.com/arpansaha13/goauthkit/tests/mocks"
 )
 
@@ -37,9 +37,9 @@ type GRPCPlaygroundTestSuite struct {
 	GRPCConn      *grpc.ClientConn
 	GRPCListener  net.Listener
 	GRPCServer    *grpc.Server
-	AuthService   pkg.IAuthService
-	EmailPool     *pkg.EmailWorkerPool
-	EmailProvider *pkg.MockEmailProvider
+	AuthService   goauthkit.IAuthService
+	EmailPool     *goauthkit.EmailWorkerPool
+	EmailProvider *goauthkit.MockEmailProvider
 	Fixture       *TestFixture
 }
 
@@ -148,25 +148,25 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 		Name: "test-postgres",
 	})
 
-	userRepo := pkg.NewUserRepository(db, cb)
-	otpRepo := pkg.NewOTPRepository(db, cb)
-	sessionRepo := pkg.NewSessionRepository(db, cb)
-	hasher := pkg.NewPasswordHasher()
-	validator := pkg.NewValidator()
-	emailProviderInterface := pkg.NewMockEmailProvider()
-	s.EmailProvider = emailProviderInterface.(*pkg.MockEmailProvider)
-	s.EmailPool = pkg.NewEmailWorkerPool(2, 50, emailProviderInterface)
+	userRepo := goauthkit.NewUserRepository(db, cb)
+	otpRepo := goauthkit.NewOTPRepository(db, cb)
+	sessionRepo := goauthkit.NewSessionRepository(db, cb)
+	hasher := goauthkit.NewPasswordHasher()
+	validator := goauthkit.NewValidator()
+	emailProviderInterface := goauthkit.NewMockEmailProvider()
+	s.EmailProvider = emailProviderInterface.(*goauthkit.MockEmailProvider)
+	s.EmailPool = goauthkit.NewEmailWorkerPool(2, 50, emailProviderInterface)
 
-	providerRepo := pkg.NewProviderRepository(db, cb)
+	providerRepo := goauthkit.NewProviderRepository(db, cb)
 	sessionCache := &mocks.MockSessionCache{}
-	s.AuthService = pkg.NewAuthService(
+	s.AuthService = goauthkit.NewAuthService(
 		userRepo,
 		otpRepo,
 		sessionRepo,
 		providerRepo,
 		sessionCache,
 		hasher,
-		pkg.AuthServiceConfig{
+		goauthkit.AuthServiceConfig{
 			OTPExpiry:  10 * time.Minute,
 			OTPLength:  6,
 			SessionTTL: 30 * time.Minute,
@@ -177,7 +177,7 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 	)
 
 	// Use pkg exports for controller (this demonstrates playground usage)
-	authServiceImpl := pkg.NewAuthServiceImpl(s.AuthService, validator)
+	authServiceImpl := goauthkit.NewAuthServiceImpl(s.AuthService, validator)
 	pb.RegisterAuthServiceServer(s.GRPCServer, authServiceImpl)
 
 	// Start server in goroutine
@@ -287,7 +287,7 @@ func (s *GRPCPlaygroundTestSuite) TestPlaygroundGRPCFlows() {
 }
 
 func (s *GRPCPlaygroundTestSuite) setupVerifiedUser(email, password string) (*domain.User, error) {
-	hasher := pkg.NewPasswordHasher()
+	hasher := goauthkit.NewPasswordHasher()
 	hashedPassword, _ := hasher.Hash(password)
 	
 	username := "testuser"

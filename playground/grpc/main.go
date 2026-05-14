@@ -18,7 +18,7 @@ import (
 
 	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/pb"
-	"github.com/arpansaha13/goauthkit/pkg"
+	"github.com/arpansaha13/goauthkit"
 	"github.com/arpansaha13/goauthkit/playground/config"
 )
 
@@ -61,12 +61,12 @@ func main() {
 	log.Printf("Starting auth service (gRPC) in %s environment", cfg.Environment)
 
 	// Initialize database
-	db, err := pkg.InitDB(cfg.DatabaseURL)
+	db, err := goauthkit.InitDB(cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer func() {
-		if err := pkg.CloseDB(db); err != nil {
+		if err := goauthkit.CloseDB(db); err != nil {
 			log.Printf("Error closing database: %v", err)
 		}
 	}()
@@ -77,18 +77,18 @@ func main() {
 	})
 
 	// Initialize session cache (required)
-	var sessionCache pkg.ISessionCache = &noopSessionCache{}
+	var sessionCache goauthkit.ISessionCache = &noopSessionCache{}
 
 	// Initialize repositories
-	userRepo := pkg.NewUserRepository(db, cb)
-	otpRepo := pkg.NewOTPRepository(db, cb)
-	sessionRepo := pkg.NewSessionRepository(db, cb)
-	providerRepo := pkg.NewProviderRepository(db, cb)
+	userRepo := goauthkit.NewUserRepository(db, cb)
+	otpRepo := goauthkit.NewOTPRepository(db, cb)
+	sessionRepo := goauthkit.NewSessionRepository(db, cb)
+	providerRepo := goauthkit.NewProviderRepository(db, cb)
 
 	// Initialize email provider
-	var emailProvider pkg.EmailProvider
+	var emailProvider goauthkit.EmailProvider
 	if cfg.Environment == "production" {
-		emailProvider = pkg.NewSMTPEmailProvider(
+		emailProvider = goauthkit.NewSMTPEmailProvider(
 			cfg.SMTPHost,
 			cfg.SMTPPort,
 			cfg.SMTPUser,
@@ -96,15 +96,15 @@ func main() {
 			cfg.EmailFrom,
 		)
 	} else {
-		emailProvider = pkg.NewMockEmailProvider()
+		emailProvider = goauthkit.NewMockEmailProvider()
 	}
 
 	// Initialize password hasher and validator
-	hasher := pkg.NewPasswordHasher()
-	validator := pkg.NewValidator()
+	hasher := goauthkit.NewPasswordHasher()
+	validator := goauthkit.NewValidator()
 
 	// Initialize email worker pool
-	emailPool := pkg.NewEmailWorkerPool(
+	emailPool := goauthkit.NewEmailWorkerPool(
 		cfg.EmailWorkerPoolSize,
 		cfg.EmailTaskQueueSize,
 		emailProvider,
@@ -112,14 +112,14 @@ func main() {
 	defer emailPool.Stop()
 
 	// Initialize auth service
-	authService := pkg.NewAuthService(
+	authService := goauthkit.NewAuthService(
 		userRepo,
 		otpRepo,
 		sessionRepo,
 		providerRepo,
 		sessionCache,
 		hasher,
-		pkg.AuthServiceConfig{
+		goauthkit.AuthServiceConfig{
 			OTPExpiry:  cfg.OTPExpiry,
 			OTPLength:  cfg.OTPLength,
 			SessionTTL: cfg.SessionTTL,
@@ -139,7 +139,7 @@ func main() {
 	grpcServer := grpc.NewServer(opts...)
 
 	// Register services
-	authController := pkg.NewAuthServiceImpl(authService, validator)
+	authController := goauthkit.NewAuthServiceImpl(authService, validator)
 
 	pb.RegisterAuthServiceServer(grpcServer, authController)
 

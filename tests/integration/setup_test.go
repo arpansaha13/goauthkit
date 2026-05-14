@@ -17,7 +17,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/arpansaha13/goauthkit/internal/domain"
-	"github.com/arpansaha13/goauthkit/pkg"
+	"github.com/arpansaha13/goauthkit"
 	"github.com/arpansaha13/goauthkit/tests/mocks"
 )
 
@@ -28,8 +28,8 @@ type AuthIntegrationTestSuite struct {
 	Ctx         context.Context
 	ServerAddr  string
 	HTTPServer  *http.Server
-	AuthService pkg.IAuthService
-	EmailPool   *pkg.EmailWorkerPool
+	AuthService goauthkit.IAuthService
+	EmailPool   *goauthkit.EmailWorkerPool
 	Fixture     *TestFixture
 }
 
@@ -98,18 +98,18 @@ func (s *AuthIntegrationTestSuite) cleanupTables() {
 
 func (s *AuthIntegrationTestSuite) setupHTTPServer(db *gorm.DB) {
 	cb := gobreaker.NewCircuitBreaker[any](gobreaker.Settings{Name: "test-postgres"})
-	userRepo := pkg.NewUserRepository(db, cb)
-	otpRepo := pkg.NewOTPRepository(db, cb)
-	sessionRepo := pkg.NewSessionRepository(db, cb)
-	hasher := pkg.NewPasswordHasher()
-	emailProvider := pkg.NewMockEmailProvider()
-	s.EmailPool = pkg.NewEmailWorkerPool(2, 50, emailProvider)
+	userRepo := goauthkit.NewUserRepository(db, cb)
+	otpRepo := goauthkit.NewOTPRepository(db, cb)
+	sessionRepo := goauthkit.NewSessionRepository(db, cb)
+	hasher := goauthkit.NewPasswordHasher()
+	emailProvider := goauthkit.NewMockEmailProvider()
+	s.EmailPool = goauthkit.NewEmailWorkerPool(2, 50, emailProvider)
 
-	providerRepo := pkg.NewProviderRepository(db, cb)
+	providerRepo := goauthkit.NewProviderRepository(db, cb)
 	sessionCache := &mocks.MockSessionCache{}
-	s.AuthService = pkg.NewAuthService(
+	s.AuthService = goauthkit.NewAuthService(
 		userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher,
-		pkg.AuthServiceConfig{
+		goauthkit.AuthServiceConfig{
 			OTPExpiry:  10 * time.Minute,
 			OTPLength:  6,
 			SessionTTL: 30 * time.Minute,
@@ -119,18 +119,18 @@ func (s *AuthIntegrationTestSuite) setupHTTPServer(db *gorm.DB) {
 		nil,
 	)
 
-	validator := pkg.NewValidator()
-	cookieConfig := pkg.CookieConfig{
+	validator := goauthkit.NewValidator()
+	cookieConfig := goauthkit.CookieConfig{
 		Name:     "test_session",
 		Path:     "/",
 		HttpOnly: true,
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/auth/signup", gtk.HttpControllerAdaptor(pkg.NewSignupController(s.AuthService, validator)))
-	mux.HandleFunc("POST /api/auth/login", gtk.HttpControllerAdaptor(pkg.NewLoginController(s.AuthService, validator, cookieConfig)))
-	mux.HandleFunc("POST /api/auth/verify", gtk.HttpControllerAdaptor(pkg.NewVerifyOTPController(s.AuthService, validator, cookieConfig)))
-	mux.HandleFunc("POST /api/auth/logout", gtk.HttpControllerAdaptor(pkg.NewLogoutController(s.AuthService, cookieConfig)))
+	mux.HandleFunc("POST /api/auth/signup", gtk.HttpControllerAdaptor(goauthkit.NewSignupController(s.AuthService, validator)))
+	mux.HandleFunc("POST /api/auth/login", gtk.HttpControllerAdaptor(goauthkit.NewLoginController(s.AuthService, validator, cookieConfig)))
+	mux.HandleFunc("POST /api/auth/verify", gtk.HttpControllerAdaptor(goauthkit.NewVerifyOTPController(s.AuthService, validator, cookieConfig)))
+	mux.HandleFunc("POST /api/auth/logout", gtk.HttpControllerAdaptor(goauthkit.NewLogoutController(s.AuthService, cookieConfig)))
 
 	// Wrap mux with middlewares
 	handler := TokenExtractionMiddleware(cookieConfig.Name)(gtk.HttpRecoveryMiddleware(gtk.HttpErrorMiddleware(mux)))
