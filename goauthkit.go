@@ -185,6 +185,11 @@ func NewMemcachedSessionCache(client *gtk.MemcachedClient, cb *gobreaker.Circuit
 	return iccache.NewMemcachedSessionCache(client, cb)
 }
 
+// NewNoopSessionCache creates a new no-op session cache
+func NewNoopSessionCache() ISessionCache {
+	return &iccache.NoopSessionCache{}
+}
+
 // ============================================================================
 // Utils Exports
 // ============================================================================
