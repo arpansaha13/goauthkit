@@ -4,17 +4,18 @@ import (
 	"context"
 	"time"
 	"github.com/arpansaha13/goauthkit/internal/domain"
+	"github.com/arpansaha13/gotoolkit/gtk"
 )
 
 // NoopSessionCache is a no-op implementation of ISessionCache.
 type NoopSessionCache struct{}
 
 func (n *NoopSessionCache) GetSessionByToken(ctx context.Context, tokenHash string) (*domain.Session, error) {
-	return nil, nil
+	return nil, &gtk.NotFoundError{Message: "session not found in cache"}
 }
 
 func (n *NoopSessionCache) IsTokenValid(ctx context.Context, tokenHash string) (bool, int64, error) {
-	return false, 0, nil
+	return false, 0, &gtk.NotFoundError{Message: "session not found in cache"}
 }
 
 func (n *NoopSessionCache) SetSession(ctx context.Context, tokenHash string, session *domain.Session, ttl time.Duration) error {

@@ -190,6 +190,11 @@ func NewNoopSessionCache() ISessionCache {
 	return &iccache.NoopSessionCache{}
 }
 
+// NewInMemorySessionCache creates a new in-memory session cache
+func NewInMemorySessionCache() ISessionCache {
+	return iccache.NewInMemorySessionCache()
+}
+
 // ============================================================================
 // Utils Exports
 // ============================================================================
