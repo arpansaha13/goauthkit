@@ -79,9 +79,10 @@ func NewAuthService(
 
 // SignupRequest represents signup input with email, password and global name
 type SignupRequest struct {
-	Email      string `json:"email"`       // User's email address
-	Password   string `json:"password"`    // User's password (8-30 characters)
-	GlobalName string `json:"globalName"` // User's display name
+	Email           string `json:"email"`           // User's email address
+	Password        string `json:"password"`        // User's password (8-30 characters)
+	ConfirmPassword string `json:"confirmPassword"` // Password confirmation
+	GlobalName      string `json:"globalName"`      // User's display name
 }
 
 // SignupResponse represents signup output with confirmation message and OTP hash
@@ -180,6 +181,7 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 type VerifyOTPRequest struct {
 	OTPHash string `json:"otpHash"`
 	Code    string `json:"code"`
+	UserId  int64  `json:"userId"`
 }
 
 // VerifyOTPResponse represents OTP verification output with username, OTP hash, and initial session

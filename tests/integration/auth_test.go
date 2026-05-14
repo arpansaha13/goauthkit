@@ -15,8 +15,10 @@ func (s *AuthIntegrationTestSuite) TestSignup() {
 			Name: "Successful Signup",
 			Test: func(f *TestFixture) error {
 				payload := pkg.SignupRequest{
-					Email:    "signup@example.com",
-					Password: "Password123!",
+					Email:           "signup@example.com",
+					Password:        "Password123!",
+					ConfirmPassword: "Password123!",
+					GlobalName:      "Signup User",
 				}
 				resp, err := f.HTTPClient.POST("/api/auth/signup", payload)
 				if err != nil {
@@ -30,8 +32,10 @@ func (s *AuthIntegrationTestSuite) TestSignup() {
 			Name: "Invalid Email",
 			Test: func(f *TestFixture) error {
 				payload := pkg.SignupRequest{
-					Email:    "invalid-email",
-					Password: "Password123!",
+					Email:           "invalid-email",
+					Password:        "Password123!",
+					ConfirmPassword: "Password123!",
+					GlobalName:      "Invalid User",
 				}
 				resp, err := f.HTTPClient.POST("/api/auth/signup", payload)
 				if err != nil {
@@ -157,6 +161,7 @@ func (s *AuthIntegrationTestSuite) TestVerifyOTP() {
 				payload := pkg.VerifyOTPRequest{
 					OTPHash: otpHash,
 					Code:    code,
+					UserId:  user.ID,
 				}
 				resp, err := f.HTTPClient.POST("/api/auth/verify", payload)
 				if err != nil {
@@ -175,6 +180,7 @@ func (s *AuthIntegrationTestSuite) TestVerifyOTP() {
 				payload := pkg.VerifyOTPRequest{
 					OTPHash: otpHash,
 					Code:    "654321",
+					UserId:  user.ID,
 				}
 				resp, err := f.HTTPClient.POST("/api/auth/verify", payload)
 				if err != nil {
