@@ -181,7 +181,6 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 type VerifyOTPRequest struct {
 	OTPHash string `json:"otpHash"`
 	Code    string `json:"code"`
-	UserId  int64  `json:"userId"`
 }
 
 // VerifyOTPResponse represents OTP verification output with username, OTP hash, and initial session

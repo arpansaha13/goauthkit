@@ -161,7 +161,6 @@ func (s *AuthIntegrationTestSuite) TestVerifyOTP() {
 				payload := pkg.VerifyOTPRequest{
 					OTPHash: otpHash,
 					Code:    code,
-					UserId:  user.ID,
 				}
 				resp, err := f.HTTPClient.POST("/api/auth/verify", payload)
 				if err != nil {
@@ -180,7 +179,6 @@ func (s *AuthIntegrationTestSuite) TestVerifyOTP() {
 				payload := pkg.VerifyOTPRequest{
 					OTPHash: otpHash,
 					Code:    "654321",
-					UserId:  user.ID,
 				}
 				resp, err := f.HTTPClient.POST("/api/auth/verify", payload)
 				if err != nil {
