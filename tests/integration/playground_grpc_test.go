@@ -24,6 +24,7 @@ import (
 	"github.com/arpansaha13/goauthkit/internal/middleware"
 	"github.com/arpansaha13/goauthkit/pb"
 	"github.com/arpansaha13/goauthkit/pkg"
+	"github.com/arpansaha13/goauthkit/tests/mocks"
 )
 
 // GRPCPlaygroundTestSuite tests the gRPC playground server using pkg exports
@@ -157,12 +158,13 @@ func (s *GRPCPlaygroundTestSuite) setupGRPCServer(ctx context.Context, db *gorm.
 	s.EmailPool = pkg.NewEmailWorkerPool(2, 50, emailProviderInterface)
 
 	providerRepo := pkg.NewProviderRepository(db, cb)
+	sessionCache := &mocks.MockSessionCache{}
 	s.AuthService = pkg.NewAuthService(
 		userRepo,
 		otpRepo,
 		sessionRepo,
 		providerRepo,
-		nil,
+		sessionCache,
 		hasher,
 		pkg.AuthServiceConfig{
 			OTPExpiry:  10 * time.Minute,

@@ -18,6 +18,7 @@ import (
 
 	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/pkg"
+	"github.com/arpansaha13/goauthkit/tests/mocks"
 )
 
 type AuthIntegrationTestSuite struct {
@@ -105,8 +106,9 @@ func (s *AuthIntegrationTestSuite) setupHTTPServer(db *gorm.DB) {
 	s.EmailPool = pkg.NewEmailWorkerPool(2, 50, emailProvider)
 
 	providerRepo := pkg.NewProviderRepository(db, cb)
+	sessionCache := &mocks.MockSessionCache{}
 	s.AuthService = pkg.NewAuthService(
-		userRepo, otpRepo, sessionRepo, providerRepo, nil, hasher,
+		userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher,
 		pkg.AuthServiceConfig{
 			OTPExpiry:  10 * time.Minute,
 			OTPLength:  6,

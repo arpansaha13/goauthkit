@@ -54,7 +54,6 @@ type AuthServiceConfig struct {
 
 // NewAuthService creates a new auth service with all dependencies initialized.
 // Returns a fully configured AuthService ready for use.
-// sessionCache can be nil, in which case caching is disabled (graceful degradation).
 func NewAuthService(
 	userRepo repository.IUserRepository,
 	otpRepo repository.IOTPRepository,
@@ -65,6 +64,24 @@ func NewAuthService(
 	config AuthServiceConfig,
 	hooks *AuthServiceHooks,
 ) *AuthService {
+	if userRepo == nil {
+		panic("userRepo is required")
+	}
+	if otpRepo == nil {
+		panic("otpRepo is required")
+	}
+	if sessionRepo == nil {
+		panic("sessionRepo is required")
+	}
+	if providerRepo == nil {
+		panic("providerRepo is required")
+	}
+	if sessionCache == nil {
+		panic("sessionCache is required")
+	}
+	if hasher == nil {
+		panic("hasher is required")
+	}
 	return &AuthService{
 		userRepo:     userRepo,
 		otpRepo:      otpRepo,
@@ -458,21 +475,19 @@ func (s *AuthService) ValidateSession(ctx context.Context, req ValidateSessionRe
 
 	tokenHash := s.hashToken(req.Token)
 
-	// Try cache first if available
-	if s.sessionCache != nil {
-		valid, userID, err := s.sessionCache.IsTokenValid(ctx, tokenHash)
-		if err == nil {
-			// Cache hit
-			return &ValidateSessionResponse{
-				UserID: userID,
-				Valid:  valid,
-			}, nil
-		}
-		// Cache miss or error - fall through to repository
+	// Try cache first
+	valid, userID, err := s.sessionCache.IsTokenValid(ctx, tokenHash)
+	if err == nil {
+		// Cache hit
+		return &ValidateSessionResponse{
+			UserID: userID,
+			Valid:  valid,
+		}, nil
 	}
+	// Cache miss or error - fall through to repository
 
 	// Fall back to repository
-	valid, userID, err := s.sessionRepo.IsTokenValid(ctx, tokenHash)
+	valid, userID, err = s.sessionRepo.IsTokenValid(ctx, tokenHash)
 	if err != nil {
 		return nil, err
 	}
@@ -527,10 +542,8 @@ func (s *AuthService) RefreshSession(ctx context.Context, req RefreshSessionRequ
 	}
 
 	// Update cache: invalidate old token and cache new token (best-effort)
-	if s.sessionCache != nil {
-		_ = s.sessionCache.InvalidateSessionToken(ctx, tokenHash)
-		_ = s.sessionCache.SetSession(ctx, newTokenHash, session, s.config.SessionTTL)
-	}
+	_ = s.sessionCache.InvalidateSessionToken(ctx, tokenHash)
+	_ = s.sessionCache.SetSession(ctx, newTokenHash, session, s.config.SessionTTL)
 
 	return &RefreshSessionResponse{
 		NewSessionToken: newToken,
@@ -575,9 +588,7 @@ func (s *AuthService) Logout(ctx context.Context, req LogoutRequest) (*LogoutRes
 	}
 
 	// Invalidate session in cache (best-effort)
-	if s.sessionCache != nil {
-		_ = s.sessionCache.InvalidateSessionToken(ctx, tokenHash)
-	}
+	_ = s.sessionCache.InvalidateSessionToken(ctx, tokenHash)
 
 	return &LogoutResponse{
 		Message: "logout successful",
@@ -771,9 +782,7 @@ func (s *AuthService) createSession(ctx context.Context, userID int64) (string, 
 	}
 
 	// Cache the new session (best-effort, failures are non-fatal)
-	if s.sessionCache != nil {
-		_ = s.sessionCache.SetSession(ctx, tokenHash, session, s.config.SessionTTL)
-	}
+	_ = s.sessionCache.SetSession(ctx, tokenHash, session, s.config.SessionTTL)
 
 	return sessionToken, expiresAt, nil
 }

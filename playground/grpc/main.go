@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -8,16 +9,33 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/sony/gobreaker/v2"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/pb"
 	"github.com/arpansaha13/goauthkit/pkg"
 	"github.com/arpansaha13/goauthkit/playground/config"
 )
+
+type noopSessionCache struct{}
+
+func (n *noopSessionCache) GetSessionByToken(ctx context.Context, tokenHash string) (*domain.Session, error) {
+	return nil, nil
+}
+func (n *noopSessionCache) IsTokenValid(ctx context.Context, tokenHash string) (bool, int64, error) {
+	return false, 0, nil
+}
+func (n *noopSessionCache) SetSession(ctx context.Context, tokenHash string, session *domain.Session, ttl time.Duration) error {
+	return nil
+}
+func (n *noopSessionCache) InvalidateSessionToken(ctx context.Context, tokenHash string) error {
+	return nil
+}
 
 var (
 	environment = flag.String("env", "development", "Environment: development, staging, production")
@@ -58,11 +76,8 @@ func main() {
 		Name: "playground-postgres",
 	})
 
-	// Initialize session cache (optional - can be nil for database-only mode)
-	var sessionCache pkg.ISessionCache
-	// For now, we skip memcached in playground - pass nil to use database-only mode
-	// To enable memcached: initialize memcache.Client and pass it to pkg.NewMemcachedSessionCache
-	sessionCache = nil
+	// Initialize session cache (required)
+	var sessionCache pkg.ISessionCache = &noopSessionCache{}
 
 	// Initialize repositories
 	userRepo := pkg.NewUserRepository(db, cb)
