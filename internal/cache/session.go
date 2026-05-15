@@ -176,26 +176,44 @@ func (c *MemcachedSessionCache) InvalidateSessionToken(ctx context.Context, toke
 		return nil // Cache not available, no-op
 	}
 
-	// Delete session cache entry
-	cacheKey := fmt.Sprintf("session:%s", tokenHash)
-	_, execErr := c.cb.Execute(func() (any, error) {
-		return nil, c.client.Delete(cacheKey)
-	})
+	// Function to delete session cache entry
+	deleteCacheKey := func(key string) error {
+		_, execErr := c.cb.Execute(func() (any, error) {
+			return nil, c.client.Delete(key)
+		})
 
-	if execErr != nil && !errors.Is(execErr, memcache.ErrCacheMiss) {
-		// Log but don't fail - cache is best-effort
-		return fmt.Errorf("failed to delete session from cache: %w", execErr)
+		if execErr != nil && !errors.Is(execErr, memcache.ErrCacheMiss) {
+			return execErr
+		}
+
+		return nil
 	}
 
-	// Delete token validity cache entry
+	// Delete session and token validity cache entries
+	cacheKey := fmt.Sprintf("session:%s", tokenHash)
 	tokenValidKey := fmt.Sprintf("token_valid:%s", tokenHash)
-	_, execErr = c.cb.Execute(func() (any, error) {
-		return nil, c.client.Delete(tokenValidKey)
-	})
 
-	if execErr != nil && !errors.Is(execErr, memcache.ErrCacheMiss) {
+	if err := deleteCacheKey(cacheKey); err != nil {
 		// Log but don't fail - cache is best-effort
-		return fmt.Errorf("failed to delete token validity from cache: %w", execErr)
+		return fmt.Errorf("failed to delete session from cache: %w", err)
+	}
+
+	if err := deleteCacheKey(tokenValidKey); err != nil {
+		// Log but don't fail - cache is best-effort
+		return fmt.Errorf("failed to delete token validity from cache: %w", err)
+	}
+
+	// Double delete prevents stale session entries from being re-cached by concurrent readers.
+	time.Sleep(25 * time.Millisecond)
+
+	if err := deleteCacheKey(cacheKey); err != nil {
+		// Log but don't fail - cache is best-effort
+		return fmt.Errorf("failed to delete session from cache (second pass): %w", err)
+	}
+
+	if err := deleteCacheKey(tokenValidKey); err != nil {
+		// Log but don't fail - cache is best-effort
+		return fmt.Errorf("failed to delete token validity from cache (second pass): %w", err)
 	}
 
 	return nil
