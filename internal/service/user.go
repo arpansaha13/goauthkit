@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/arpansaha13/gotoolkit/gtk"
@@ -30,25 +31,39 @@ type GetUserResponse struct {
 // Returns complete user data including email, username, and verified status.
 // Returns error if user not found or database query fails.
 func (s *AuthService) GetUser(ctx context.Context, req GetUserRequest) (*GetUserResponse, error) {
-	user, err := s.userRepo.GetByID(ctx, req.UserID)
-	if err != nil {
-		return nil, err
-	}
+	key := fmt.Sprintf("auth:user:get:%d", req.UserID)
+	ch := s.sf.DoChan(key, func() (any, error) {
+		detachedCtx := context.WithoutCancel(ctx)
+		user, err := s.userRepo.GetByID(detachedCtx, req.UserID)
+		if err != nil {
+			return nil, err
+		}
 
-	username := ""
-	if user.Username != nil {
-		username = *user.Username
-	}
+		username := ""
+		if user.Username != nil {
+			username = *user.Username
+		}
 
-	userData := UserData{
-		UserID:    user.ID,
-		Email:     user.Email,
-		Username:  username,
-		Verified:  user.Verified,
-		CreatedAt: user.CreatedAt,
-	}
+		userData := UserData{
+			UserID:    user.ID,
+			Email:     user.Email,
+			Username:  username,
+			Verified:  user.Verified,
+			CreatedAt: user.CreatedAt,
+		}
 
-	return &GetUserResponse{User: userData}, nil
+		return &GetUserResponse{User: userData}, nil
+	})
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-ch:
+		if res.Err != nil {
+			return nil, res.Err
+		}
+		return res.Val.(*GetUserResponse), nil
+	}
 }
 
 // GetUserByEmailRequest represents get user by email input

@@ -9,6 +9,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/arpansaha13/goauthkit/internal/cache"
 	"github.com/arpansaha13/goauthkit/internal/domain"
@@ -30,6 +31,7 @@ type AuthService struct {
 	hasher       *utils.PasswordHasher
 	config       AuthServiceConfig
 	hooks        *AuthServiceHooks
+	sf           singleflight.Group
 }
 
 // UserCreatedEvent encapsulates data for the user creation hook
@@ -474,28 +476,41 @@ func (s *AuthService) ValidateSession(ctx context.Context, req ValidateSessionRe
 	}
 
 	tokenHash := s.hashToken(req.Token)
+	key := fmt.Sprintf("auth:session:validate:%s", tokenHash)
 
-	// Try cache first
-	valid, userID, err := s.sessionCache.IsTokenValid(ctx, tokenHash)
-	if err == nil {
-		// Cache hit
+	ch := s.sf.DoChan(key, func() (any, error) {
+		detachedCtx := context.WithoutCancel(ctx)
+
+		// Try cache first
+		valid, userID, err := s.sessionCache.IsTokenValid(detachedCtx, tokenHash)
+		if err == nil {
+			return &ValidateSessionResponse{
+				UserID: userID,
+				Valid:  valid,
+			}, nil
+		}
+
+		// Fall back to repository
+		valid, userID, err = s.sessionRepo.IsTokenValid(detachedCtx, tokenHash)
+		if err != nil {
+			return nil, err
+		}
+
 		return &ValidateSessionResponse{
 			UserID: userID,
 			Valid:  valid,
 		}, nil
-	}
-	// Cache miss or error - fall through to repository
+	})
 
-	// Fall back to repository
-	valid, userID, err = s.sessionRepo.IsTokenValid(ctx, tokenHash)
-	if err != nil {
-		return nil, err
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-ch:
+		if res.Err != nil {
+			return nil, res.Err
+		}
+		return res.Val.(*ValidateSessionResponse), nil
 	}
-
-	return &ValidateSessionResponse{
-		UserID: userID,
-		Valid:  valid,
-	}, nil
 }
 
 // RefreshSessionRequest represents session refresh input
