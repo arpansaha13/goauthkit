@@ -4,10 +4,9 @@ import (
 	"context"
 	"strings"
 
+	"github.com/arpansaha13/gotoolkit/gtk"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
 // AuthorizationInterceptor intercepts gRPC requests to validate session tokens
@@ -21,7 +20,7 @@ func AuthorizationInterceptor() grpc.UnaryServerInterceptor {
 		// Extract token from metadata
 		token := extractTokenFromMetadata(ctx)
 		if token == "" {
-			return nil, status.Error(codes.Unauthenticated, "missing or invalid authorization token")
+			return nil, &gtk.UnauthorizedError{Message: "missing or invalid authorization token"}
 		}
 
 		// Add token to context

@@ -13,24 +13,32 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit"
+	"github.com/arpansaha13/goauthkit/internal/domain"
+	"github.com/arpansaha13/goauthkit/internal/middleware"
+	"github.com/arpansaha13/goauthkit/pb"
 	"github.com/arpansaha13/goauthkit/tests/mocks"
 )
 
 type AuthIntegrationTestSuite struct {
 	suite.Suite
-	Container   testcontainers.Container
-	DB          *gorm.DB
-	Ctx         context.Context
-	ServerAddr  string
-	HTTPServer  *http.Server
-	AuthService goauthkit.IAuthService
-	EmailPool   *goauthkit.EmailWorkerPool
-	Fixture     *TestFixture
+	Container     testcontainers.Container
+	DB            *gorm.DB
+	Ctx           context.Context
+	ServerAddr    string
+	HTTPServer    *http.Server
+	GRPCServer    *grpc.Server
+	GRPCConn      *grpc.ClientConn
+	GRPCClient    pb.AuthServiceClient
+	AuthService   goauthkit.IAuthService
+	EmailPool     *goauthkit.EmailWorkerPool
+	EmailProvider *goauthkit.MockEmailProvider
+	Fixture       *TestFixture
 }
 
 func (s *AuthIntegrationTestSuite) SetupSuite() {
@@ -69,41 +77,16 @@ func (s *AuthIntegrationTestSuite) SetupSuite() {
 	err = domain.AutoMigrate(db)
 	s.Require().NoError(err, "Failed to run migrations")
 
-	s.setupHTTPServer(db)
-}
-
-func (s *AuthIntegrationTestSuite) TearDownSuite() {
-	if s.HTTPServer != nil {
-		s.HTTPServer.Shutdown(s.Ctx)
-	}
-	if s.Container != nil {
-		s.Container.Terminate(s.Ctx)
-	}
-	if s.EmailPool != nil {
-		s.EmailPool.Stop()
-	}
-}
-
-func (s *AuthIntegrationTestSuite) SetupTest() {
-	s.cleanupTables()
-	s.Fixture = NewTestFixture(s.T(), s.DB, s.ServerAddr, nil)
-}
-
-func (s *AuthIntegrationTestSuite) cleanupTables() {
-	tables := []string{"sessions", "otps", "credentials", "users"}
-	for _, table := range tables {
-		s.DB.Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", table))
-	}
-}
-
-func (s *AuthIntegrationTestSuite) setupHTTPServer(db *gorm.DB) {
+	// Set up dependencies
 	cb := gobreaker.NewCircuitBreaker[any](gobreaker.Settings{Name: "test-postgres"})
 	userRepo := goauthkit.NewUserRepository(db, cb)
 	otpRepo := goauthkit.NewOTPRepository(db, cb)
 	sessionRepo := goauthkit.NewSessionRepository(db, cb)
 	hasher := goauthkit.NewPasswordHasher()
-	emailProvider := goauthkit.NewMockEmailProvider()
-	s.EmailPool = goauthkit.NewEmailWorkerPool(2, 50, emailProvider)
+	
+	emailProviderInterface := goauthkit.NewMockEmailProvider()
+	s.EmailProvider = emailProviderInterface.(*goauthkit.MockEmailProvider)
+	s.EmailPool = goauthkit.NewEmailWorkerPool(2, 50, emailProviderInterface)
 
 	providerRepo := goauthkit.NewProviderRepository(db, cb)
 	sessionCache := &mocks.MockSessionCache{}
@@ -119,6 +102,41 @@ func (s *AuthIntegrationTestSuite) setupHTTPServer(db *gorm.DB) {
 		nil,
 	)
 
+	s.setupHTTPServer()
+	s.setupGRPCServer()
+}
+
+func (s *AuthIntegrationTestSuite) TearDownSuite() {
+	if s.HTTPServer != nil {
+		s.HTTPServer.Shutdown(s.Ctx)
+	}
+	if s.GRPCServer != nil {
+		s.GRPCServer.Stop()
+	}
+	if s.GRPCConn != nil {
+		s.GRPCConn.Close()
+	}
+	if s.Container != nil {
+		s.Container.Terminate(s.Ctx)
+	}
+	if s.EmailPool != nil {
+		s.EmailPool.Stop()
+	}
+}
+
+func (s *AuthIntegrationTestSuite) SetupTest() {
+	s.cleanupTables()
+	s.Fixture = NewTestFixture(s.T(), s.DB, s.ServerAddr, s.GRPCClient)
+}
+
+func (s *AuthIntegrationTestSuite) cleanupTables() {
+	tables := []string{"sessions", "otps", "credentials", "users"}
+	for _, table := range tables {
+		s.DB.Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", table))
+	}
+}
+
+func (s *AuthIntegrationTestSuite) setupHTTPServer() {
 	validator := goauthkit.NewValidator()
 	cookieConfig := goauthkit.CookieConfig{
 		Name:     "test_session",
@@ -142,6 +160,38 @@ func (s *AuthIntegrationTestSuite) setupHTTPServer(db *gorm.DB) {
 	s.HTTPServer = &http.Server{Handler: handler}
 	go s.HTTPServer.Serve(listener)
 	time.Sleep(100 * time.Millisecond)
+}
+
+func (s *AuthIntegrationTestSuite) setupGRPCServer() {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	s.Require().NoError(err)
+
+	s.GRPCServer = grpc.NewServer(
+		grpc.UnaryInterceptor(middleware.ChainUnaryInterceptors(
+			gtk.GrpcErrorInterceptor(),
+			gtk.GrpcRecoveryInterceptor(),
+			middleware.AuthorizationInterceptor(),
+		)),
+	)
+
+	validator := goauthkit.NewValidator()
+	authServiceImpl := goauthkit.NewAuthServiceImpl(s.AuthService, validator)
+	pb.RegisterAuthServiceServer(s.GRPCServer, authServiceImpl)
+
+	go func() {
+		if err := s.GRPCServer.Serve(listener); err != nil {
+			// Don't fail if we stop the server intentionally
+		}
+	}()
+
+	conn, err := grpc.Dial(
+		listener.Addr().String(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	s.Require().NoError(err)
+
+	s.GRPCConn = conn
+	s.GRPCClient = pb.NewAuthServiceClient(conn)
 }
 
 func TokenExtractionMiddleware(cookieName string) func(http.Handler) http.Handler {

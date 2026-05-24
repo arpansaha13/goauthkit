@@ -5,8 +5,6 @@ import (
 
 	"github.com/arpansaha13/gotoolkit/gtk"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"github.com/arpansaha13/goauthkit/internal/service"
 	"github.com/arpansaha13/goauthkit/internal/utils"
 	"github.com/arpansaha13/goauthkit/pb"
@@ -32,7 +30,7 @@ func (s *AuthServiceImpl) ValidateSession(ctx context.Context, req *pb.ValidateS
 	// Extract token from metadata
 	token := extractToken(ctx)
 	if token == "" {
-		return nil, status.Error(codes.Unauthenticated, "missing authorization token")
+		return nil, &gtk.UnauthorizedError{Message: "missing authorization token"}
 	}
 
 	// Call service
@@ -57,7 +55,7 @@ func (s *AuthServiceImpl) RefreshSession(ctx context.Context, req *pb.RefreshSes
 	// Extract token from metadata
 	token := extractToken(ctx)
 	if token == "" {
-		return nil, status.Error(codes.Unauthenticated, "missing authorization token")
+		return nil, &gtk.UnauthorizedError{Message: "missing authorization token"}
 	}
 
 	// Call service
