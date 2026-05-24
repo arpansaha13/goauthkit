@@ -40,9 +40,15 @@ type UserCreatedEvent struct {
 	GlobalName string
 }
 
+// LogoutEvent encapsulates data for the logout hook
+type LogoutEvent struct {
+	UserID int64
+}
+
 // AuthServiceHooks contains optional callbacks for auth service lifecycle events
 type AuthServiceHooks struct {
 	OnUserCreated func(ctx context.Context, event UserCreatedEvent) error
+	OnLogout      func(ctx context.Context, event LogoutEvent) error
 }
 
 // AuthServiceConfig holds configuration for the auth service
@@ -604,6 +610,13 @@ func (s *AuthService) Logout(ctx context.Context, req LogoutRequest) (*LogoutRes
 
 	// Invalidate session in cache (best-effort)
 	_ = s.sessionCache.InvalidateSessionToken(ctx, tokenHash)
+
+	// Trigger OnLogout hook
+	if s.hooks != nil && s.hooks.OnLogout != nil {
+		_ = s.hooks.OnLogout(ctx, LogoutEvent{
+			UserID: session.UserID,
+		})
+	}
 
 	return &LogoutResponse{
 		Message: "logout successful",

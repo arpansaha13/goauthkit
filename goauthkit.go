@@ -86,6 +86,7 @@ type IAuthService = isvc.IAuthService
 type AuthService = isvc.AuthService
 type AuthServiceConfig = isvc.AuthServiceConfig
 type UserCreatedEvent = isvc.UserCreatedEvent
+type LogoutEvent = isvc.LogoutEvent
 type AuthServiceHooks = isvc.AuthServiceHooks
 
 // Request/Response types
