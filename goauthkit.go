@@ -121,7 +121,7 @@ type GetUserByEmailResponse = isvc.GetUserByEmailResponse
 type DeleteUserRequest = isvc.DeleteUserRequest
 type DeleteUserResponse = isvc.DeleteUserResponse
 
-// NewAuthService creates a new auth service
+// NewAuthService creates a new auth service.
 func NewAuthService(
 	userRepo IUserRepository,
 	otpRepo IOTPRepository,
@@ -129,10 +129,11 @@ func NewAuthService(
 	providerRepo IProviderRepository,
 	sessionCache ISessionCache,
 	hasher *PasswordHasher,
+	emailPool *EmailWorkerPool,
 	config AuthServiceConfig,
 	hooks *AuthServiceHooks,
-) IAuthService {
-	return isvc.NewAuthService(userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher, config, hooks)
+) (IAuthService, error) {
+	return isvc.NewAuthService(userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher, emailPool, config, hooks)
 }
 
 // ============================================================================
@@ -232,12 +233,14 @@ type EmailProvider = iworker.EmailProvider
 
 // Worker implementations
 type EmailWorkerPool = iworker.EmailWorkerPool
+type EmailWorkerPoolConfig = iworker.EmailWorkerPoolConfig
 type MockEmailProvider = iworker.MockEmailProvider
 type SMTPEmailProvider = iworker.SMTPEmailProvider
+type SMTPConfig = iworker.SMTPConfig
 
-// NewEmailWorkerPool creates a new email worker pool
-func NewEmailWorkerPool(poolSize, queueSize int, provider EmailProvider) *iworker.EmailWorkerPool {
-	return iworker.NewEmailWorkerPool(poolSize, queueSize, provider)
+// NewEmailWorkerPool creates a new email worker pool from config and provider.
+func NewEmailWorkerPool(cfg EmailWorkerPoolConfig, provider EmailProvider) *iworker.EmailWorkerPool {
+	return iworker.NewEmailWorkerPool(cfg, provider)
 }
 
 // NewMockEmailProvider creates a new mock email provider
@@ -245,9 +248,9 @@ func NewMockEmailProvider() EmailProvider {
 	return iworker.NewMockEmailProvider()
 }
 
-// NewSMTPEmailProvider creates a new SMTP email provider
-func NewSMTPEmailProvider(host string, port int, user, password, from string) EmailProvider {
-	return iworker.NewSMTPEmailProvider(host, port, user, password, from)
+// NewSMTPEmailProvider creates a new SMTP email provider from config.
+func NewSMTPEmailProvider(cfg SMTPConfig) EmailProvider {
+	return iworker.NewSMTPEmailProvider(cfg)
 }
 
 // ============================================================================
@@ -265,6 +268,11 @@ func NewAuthServiceImpl(authService IAuthService, validator *Validator) *AuthSer
 // HTTP Controller Exports
 type CookieConfig = controller.CookieConfig
 type ProviderConfig = controller.ProviderConfig
+
+// NewCookieConfig returns CookieConfig with common secure defaults (Path "/", HttpOnly, SameSite Lax).
+func NewCookieConfig(name string, secure bool) CookieConfig {
+	return controller.NewCookieConfig(name, secure)
+}
 
 // NewSignupController creates a new HTTP signup controller
 func NewSignupController(authService IAuthService, validator *Validator) gtk.ControllerFunc {

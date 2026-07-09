@@ -29,6 +29,7 @@ type AuthService struct {
 	providerRepo repository.IProviderRepository
 	sessionCache cache.ISessionCache
 	hasher       *utils.PasswordHasher
+	emailPool    *worker.EmailWorkerPool
 	config       AuthServiceConfig
 	hooks        *AuthServiceHooks
 	sf           singleflight.Group
@@ -51,17 +52,15 @@ type AuthServiceHooks struct {
 	OnLogout      func(ctx context.Context, event LogoutEvent) error
 }
 
-// AuthServiceConfig holds configuration for the auth service
+// AuthServiceConfig holds configuration for the auth service.
 type AuthServiceConfig struct {
 	OTPExpiry  time.Duration
 	OTPLength  int
 	SessionTTL time.Duration
 	SecretKey  string
-	EmailPool  *worker.EmailWorkerPool
 }
 
 // NewAuthService creates a new auth service with all dependencies initialized.
-// Returns a fully configured AuthService ready for use.
 func NewAuthService(
 	userRepo repository.IUserRepository,
 	otpRepo repository.IOTPRepository,
@@ -69,26 +68,30 @@ func NewAuthService(
 	providerRepo repository.IProviderRepository,
 	sessionCache cache.ISessionCache,
 	hasher *utils.PasswordHasher,
+	emailPool *worker.EmailWorkerPool,
 	config AuthServiceConfig,
 	hooks *AuthServiceHooks,
-) *AuthService {
+) (*AuthService, error) {
 	if userRepo == nil {
-		panic("userRepo is required")
+		return nil, fmt.Errorf("userRepo is required")
 	}
 	if otpRepo == nil {
-		panic("otpRepo is required")
+		return nil, fmt.Errorf("otpRepo is required")
 	}
 	if sessionRepo == nil {
-		panic("sessionRepo is required")
+		return nil, fmt.Errorf("sessionRepo is required")
 	}
 	if providerRepo == nil {
-		panic("providerRepo is required")
+		return nil, fmt.Errorf("providerRepo is required")
 	}
 	if sessionCache == nil {
-		panic("sessionCache is required")
+		return nil, fmt.Errorf("sessionCache is required")
 	}
 	if hasher == nil {
-		panic("hasher is required")
+		return nil, fmt.Errorf("hasher is required")
+	}
+	if emailPool == nil {
+		return nil, fmt.Errorf("emailPool is required")
 	}
 	return &AuthService{
 		userRepo:     userRepo,
@@ -97,9 +100,10 @@ func NewAuthService(
 		providerRepo: providerRepo,
 		sessionCache: sessionCache,
 		hasher:       hasher,
+		emailPool:    emailPool,
 		config:       config,
 		hooks:        hooks,
-	}
+	}, nil
 }
 
 // SignupRequest represents signup input with email, password and global name
@@ -190,7 +194,7 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 
 	// Enqueue email task with OTP details
 	emailBody := fmt.Sprintf("Your OTP is: %s\n\nThis code expires in 10 minutes.", otp)
-	s.config.EmailPool.Enqueue(worker.EmailTask{
+	s.emailPool.Enqueue(worker.EmailTask{
 		Recipient: req.Email,
 		Subject:   "Verify Your Email",
 		Body:      emailBody,
@@ -688,7 +692,7 @@ func (s *AuthService) ForgotPassword(ctx context.Context, req ForgotPasswordRequ
 
 	// Enqueue email task with OTP details
 	emailBody := fmt.Sprintf("Your password reset OTP is: %s\n\nThis code expires in 10 minutes.", otp)
-	s.config.EmailPool.Enqueue(worker.EmailTask{
+	s.emailPool.Enqueue(worker.EmailTask{
 		Recipient: req.Email,
 		Subject:   "Reset Your Password",
 		Body:      emailBody,

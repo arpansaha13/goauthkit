@@ -12,8 +12,20 @@ import (
 	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/internal/service"
 	"github.com/arpansaha13/goauthkit/internal/utils"
+	"github.com/arpansaha13/goauthkit/internal/worker"
 	"github.com/arpansaha13/goauthkit/tests/mocks"
 )
+
+// noopEmailProvider is a silent EmailProvider for unit tests that do not exercise email.
+type noopEmailProvider struct{}
+
+func (noopEmailProvider) SendEmail(ctx context.Context, email, subject, body string) error {
+	return nil
+}
+
+func newTestEmailPool() *worker.EmailWorkerPool {
+	return worker.NewEmailWorkerPool(worker.EmailWorkerPoolConfig{WorkerCount: 1, QueueSize: 10}, noopEmailProvider{})
+}
 
 func TestAuthService_GetUser(t *testing.T) {
 	tests := []struct {
@@ -89,7 +101,10 @@ func TestAuthService_GetUser(t *testing.T) {
 				SessionTTL: time.Hour * 24,
 				SecretKey:  "secret",
 			}
-			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, &mocks.MockSessionCache{}, hasher, config, nil)
+			emailPool := newTestEmailPool()
+			defer emailPool.Stop()
+			svc, err := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, &mocks.MockSessionCache{}, hasher, emailPool, config, nil)
+			require.NoError(t, err)
 			resp, err := svc.GetUser(context.Background(), service.GetUserRequest{UserID: tt.userID})
 
 			if tt.expectedError {
@@ -176,7 +191,10 @@ func TestAuthService_GetUserByEmail(t *testing.T) {
 				SessionTTL: time.Hour * 24,
 				SecretKey:  "secret",
 			}
-			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, &mocks.MockSessionCache{}, hasher, config, nil)
+			emailPool := newTestEmailPool()
+			defer emailPool.Stop()
+			svc, err := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, &mocks.MockSessionCache{}, hasher, emailPool, config, nil)
+			require.NoError(t, err)
 			resp, err := svc.GetUserByEmail(context.Background(), service.GetUserByEmailRequest{Email: tt.email})
 
 			if tt.expectedError {
@@ -264,7 +282,10 @@ func TestAuthService_DeleteUser(t *testing.T) {
 				SessionTTL: time.Hour * 24,
 				SecretKey:  "secret",
 			}
-			svc := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, &mocks.MockSessionCache{}, hasher, config, nil)
+			emailPool := newTestEmailPool()
+			defer emailPool.Stop()
+			svc, err := service.NewAuthService(userRepo, otpRepo, sessionRepo, &mocks.MockProviderRepository{}, &mocks.MockSessionCache{}, hasher, emailPool, config, nil)
+			require.NoError(t, err)
 			resp, err := svc.DeleteUser(context.Background(), service.DeleteUserRequest{UserID: tt.userID})
 
 			if tt.expectedError {

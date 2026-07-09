@@ -86,21 +86,25 @@ func (s *AuthIntegrationTestSuite) SetupSuite() {
 	
 	emailProviderInterface := goauthkit.NewMockEmailProvider()
 	s.EmailProvider = emailProviderInterface.(*goauthkit.MockEmailProvider)
-	s.EmailPool = goauthkit.NewEmailWorkerPool(2, 50, emailProviderInterface)
+	s.EmailPool = goauthkit.NewEmailWorkerPool(
+		goauthkit.EmailWorkerPoolConfig{WorkerCount: 2, QueueSize: 50},
+		emailProviderInterface,
+	)
 
 	providerRepo := goauthkit.NewProviderRepository(db, cb)
 	sessionCache := &mocks.MockSessionCache{}
-	s.AuthService = goauthkit.NewAuthService(
+	s.AuthService, err = goauthkit.NewAuthService(
 		userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher,
+		s.EmailPool,
 		goauthkit.AuthServiceConfig{
 			OTPExpiry:  10 * time.Minute,
 			OTPLength:  6,
 			SessionTTL: 30 * time.Minute,
 			SecretKey:  "test-secret-key-at-least-32-characters-long-ok",
-			EmailPool:  s.EmailPool,
 		},
 		nil,
 	)
+	s.Require().NoError(err, "Failed to create auth service")
 
 	s.setupHTTPServer()
 	s.setupGRPCServer()
@@ -138,11 +142,7 @@ func (s *AuthIntegrationTestSuite) cleanupTables() {
 
 func (s *AuthIntegrationTestSuite) setupHTTPServer() {
 	validator := goauthkit.NewValidator()
-	cookieConfig := goauthkit.CookieConfig{
-		Name:     "test_session",
-		Path:     "/",
-		HttpOnly: true,
-	}
+	cookieConfig := goauthkit.NewCookieConfig("test_session", false)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/auth/signup", gtk.HttpControllerAdaptor(goauthkit.NewSignupController(s.AuthService, validator)))

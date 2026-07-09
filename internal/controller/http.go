@@ -21,6 +21,18 @@ type CookieConfig struct {
 	SameSite http.SameSite
 }
 
+// NewCookieConfig returns a CookieConfig with common secure defaults
+// (Path "/", HttpOnly true, SameSite Lax). Set secure=true in production (HTTPS).
+func NewCookieConfig(name string, secure bool) CookieConfig {
+	return CookieConfig{
+		Name:     name,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteLaxMode,
+	}
+}
+
 // NewSignupController returns a controller for user registration
 func NewSignupController(authService service.IAuthService, validator *utils.Validator) gtk.ControllerFunc {
 	return func(w http.ResponseWriter, r *http.Request) (*gtk.ControllerResponse, error) {

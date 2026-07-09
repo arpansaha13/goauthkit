@@ -28,8 +28,23 @@ type EmailProvider interface {
 	SendEmail(ctx context.Context, email, subject, body string) error
 }
 
-// NewEmailWorkerPool creates a new email worker pool
-func NewEmailWorkerPool(workerCount int, queueSize int, emailProvider EmailProvider) *EmailWorkerPool {
+// EmailWorkerPoolConfig holds pool sizing settings.
+type EmailWorkerPoolConfig struct {
+	WorkerCount int
+	QueueSize   int
+}
+
+// NewEmailWorkerPool creates a new email worker pool from config and provider.
+func NewEmailWorkerPool(cfg EmailWorkerPoolConfig, emailProvider EmailProvider) *EmailWorkerPool {
+	workerCount := cfg.WorkerCount
+	if workerCount <= 0 {
+		workerCount = 1
+	}
+	queueSize := cfg.QueueSize
+	if queueSize <= 0 {
+		queueSize = 1
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	pool := &EmailWorkerPool{

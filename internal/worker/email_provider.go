@@ -8,6 +8,15 @@ import (
 	"go.uber.org/zap"
 )
 
+// SMTPConfig holds SMTP connection settings.
+type SMTPConfig struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+	From     string
+}
+
 // SMTPEmailProvider implements EmailProvider using SMTP
 type SMTPEmailProvider struct {
 	host     string
@@ -17,14 +26,14 @@ type SMTPEmailProvider struct {
 	fromAddr string
 }
 
-// NewSMTPEmailProvider creates a new SMTP email provider
-func NewSMTPEmailProvider(host string, port int, user, password, fromAddr string) *SMTPEmailProvider {
+// NewSMTPEmailProvider creates a new SMTP email provider from config.
+func NewSMTPEmailProvider(cfg SMTPConfig) *SMTPEmailProvider {
 	return &SMTPEmailProvider{
-		host:     host,
-		port:     port,
-		user:     user,
-		password: password,
-		fromAddr: fromAddr,
+		host:     cfg.Host,
+		port:     cfg.Port,
+		user:     cfg.User,
+		password: cfg.Password,
+		fromAddr: cfg.From,
 	}
 }
 
