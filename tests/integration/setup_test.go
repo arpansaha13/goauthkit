@@ -83,7 +83,7 @@ func (s *AuthIntegrationTestSuite) SetupSuite() {
 	otpRepo := goauthkit.NewOTPRepository(db, cb)
 	sessionRepo := goauthkit.NewSessionRepository(db, cb)
 	hasher := goauthkit.NewPasswordHasher()
-	
+
 	emailProviderInterface := goauthkit.NewMockEmailProvider()
 	s.EmailProvider = emailProviderInterface.(*goauthkit.MockEmailProvider)
 	s.EmailPool = goauthkit.NewEmailWorkerPool(
@@ -144,11 +144,13 @@ func (s *AuthIntegrationTestSuite) setupHTTPServer() {
 	validator := goauthkit.NewValidator()
 	cookieConfig := goauthkit.NewCookieConfig("test_session", false)
 
+	authCtrl := goauthkit.NewAuthController(s.AuthService, validator, cookieConfig)
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/auth/signup", gtk.HttpControllerAdaptor(goauthkit.NewSignupController(s.AuthService, validator)))
-	mux.HandleFunc("POST /api/auth/login", gtk.HttpControllerAdaptor(goauthkit.NewLoginController(s.AuthService, validator, cookieConfig)))
-	mux.HandleFunc("POST /api/auth/verify", gtk.HttpControllerAdaptor(goauthkit.NewVerifyOTPController(s.AuthService, validator, cookieConfig)))
-	mux.HandleFunc("POST /api/auth/logout", gtk.HttpControllerAdaptor(goauthkit.NewLogoutController(s.AuthService, cookieConfig)))
+	mux.HandleFunc("POST /api/auth/signup", gtk.HttpControllerAdaptor(authCtrl.Signup))
+	mux.HandleFunc("POST /api/auth/login", gtk.HttpControllerAdaptor(authCtrl.Login))
+	mux.HandleFunc("POST /api/auth/verify", gtk.HttpControllerAdaptor(authCtrl.VerifyOTP))
+	mux.HandleFunc("POST /api/auth/logout", gtk.HttpControllerAdaptor(authCtrl.Logout))
 
 	// Wrap mux with middlewares
 	handler := TokenExtractionMiddleware(cookieConfig.Name)(gtk.HttpRecoveryMiddleware(gtk.HttpErrorMiddleware(mux)))

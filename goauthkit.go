@@ -268,40 +268,22 @@ func NewAuthServiceImpl(authService IAuthService, validator *Validator) *AuthSer
 // HTTP Controller Exports
 type CookieConfig = controller.CookieConfig
 type ProviderConfig = controller.ProviderConfig
+type AuthController = controller.AuthController
+type OAuthController = controller.OAuthController
 
 // NewCookieConfig returns CookieConfig with common secure defaults (Path "/", HttpOnly, SameSite Lax).
 func NewCookieConfig(name string, secure bool) CookieConfig {
 	return controller.NewCookieConfig(name, secure)
 }
 
-// NewSignupController creates a new HTTP signup controller
-func NewSignupController(authService IAuthService, validator *Validator) gtk.ControllerFunc {
-	return controller.NewSignupController(authService, validator)
+// NewAuthController creates the HTTP auth controller (signup, login, verify, logout).
+func NewAuthController(authService IAuthService, validator *Validator, cookieConfig CookieConfig) *AuthController {
+	return controller.NewAuthController(authService, validator, cookieConfig)
 }
 
-// NewLoginController creates a new HTTP login controller
-func NewLoginController(authService IAuthService, validator *Validator, cookieConfig CookieConfig) gtk.ControllerFunc {
-	return controller.NewLoginController(authService, validator, cookieConfig)
-}
-
-// NewVerifyOTPController creates a new HTTP OTP verification controller
-func NewVerifyOTPController(authService IAuthService, validator *Validator, cookieConfig CookieConfig) gtk.ControllerFunc {
-	return controller.NewVerifyOTPController(authService, validator, cookieConfig)
-}
-
-// NewLogoutController creates a new HTTP logout controller
-func NewLogoutController(authService IAuthService, cookieConfig CookieConfig) gtk.ControllerFunc {
-	return controller.NewLogoutController(authService, cookieConfig)
-}
-
-// NewOAuthLoginController returns a controller that initiates the OAuth flow
-func NewOAuthLoginController(providerCfg ProviderConfig) gtk.ControllerFunc {
-	return controller.NewOAuthLoginController(providerCfg)
-}
-
-// NewOAuthCallbackController returns a controller that handles the OAuth callback
-func NewOAuthCallbackController(authService IAuthService, providerCfg ProviderConfig, cookieConfig CookieConfig) gtk.ControllerFunc {
-	return controller.NewOAuthCallbackController(authService, providerCfg, cookieConfig)
+// NewOAuthController creates the OAuth/OIDC HTTP controller for a single provider.
+func NewOAuthController(authService IAuthService, providerCfg ProviderConfig, cookieConfig CookieConfig) *OAuthController {
+	return controller.NewOAuthController(authService, providerCfg, cookieConfig)
 }
 
 // ============================================================================

@@ -81,7 +81,7 @@ func TestSignupValidation(t *testing.T) {
 			mockService := &mocks.MockAuthService{
 				SignupFunc: tc.MockFunc,
 			}
-			controller := NewSignupController(mockService, utils.NewValidator())
+			ctrl := NewAuthController(mockService, utils.NewValidator(), CookieConfig{Name: "session"})
 
 			var reqBody io.Reader
 			if str, ok := tc.Body.(string); ok {
@@ -94,7 +94,7 @@ func TestSignupValidation(t *testing.T) {
 			req := httptest.NewRequest("POST", "/signup", reqBody)
 			w := httptest.NewRecorder()
 
-			resp, err := controller(w, req)
+			resp, err := ctrl.Signup(w, req)
 
 			if tc.ExpectedError {
 				require.Error(t, err)
@@ -139,7 +139,7 @@ func TestVerifyOTPValidation(t *testing.T) {
 			Name: "Missing OTP hash",
 			Body: map[string]string{
 				"otpHash": "",
-				"code":     "123456",
+				"code":    "123456",
 			},
 			ExpectedError: true,
 			ErrorType:     (*gtk.ValidationError)(nil),
@@ -157,7 +157,7 @@ func TestVerifyOTPValidation(t *testing.T) {
 			Name: "Invalid OTP hash length",
 			Body: map[string]string{
 				"otpHash": "invalid-length",
-				"code":     "123456",
+				"code":    "123456",
 			},
 			ExpectedError: true,
 			ErrorType:     (*gtk.ValidationError)(nil),
@@ -175,7 +175,7 @@ func TestVerifyOTPValidation(t *testing.T) {
 			mockService := &mocks.MockAuthService{
 				VerifyOTPFunc: tc.MockFunc,
 			}
-			controller := NewVerifyOTPController(mockService, utils.NewValidator(), CookieConfig{Name: "session"})
+			ctrl := NewAuthController(mockService, utils.NewValidator(), CookieConfig{Name: "session"})
 
 			var reqBody io.Reader
 			if str, ok := tc.Body.(string); ok {
@@ -188,7 +188,7 @@ func TestVerifyOTPValidation(t *testing.T) {
 			req := httptest.NewRequest("POST", "/verify", reqBody)
 			w := httptest.NewRecorder()
 
-			resp, err := controller(w, req)
+			resp, err := ctrl.VerifyOTP(w, req)
 
 			if tc.ExpectedError {
 				require.Error(t, err)
@@ -264,7 +264,7 @@ func TestLoginValidation(t *testing.T) {
 			mockService := &mocks.MockAuthService{
 				LoginFunc: tc.MockFunc,
 			}
-			controller := NewLoginController(mockService, utils.NewValidator(), CookieConfig{Name: "session"})
+			ctrl := NewAuthController(mockService, utils.NewValidator(), CookieConfig{Name: "session"})
 
 			var reqBody io.Reader
 			if str, ok := tc.Body.(string); ok {
@@ -277,7 +277,7 @@ func TestLoginValidation(t *testing.T) {
 			req := httptest.NewRequest("POST", "/login", reqBody)
 			w := httptest.NewRecorder()
 
-			resp, err := controller(w, req)
+			resp, err := ctrl.Login(w, req)
 
 			if tc.ExpectedError {
 				require.Error(t, err)
@@ -352,7 +352,7 @@ func TestSignupErrorHandling(t *testing.T) {
 				SignupFunc: tc.MockFunc,
 			}
 
-			controller := NewSignupController(mockService, utils.NewValidator())
+			ctrl := NewAuthController(mockService, utils.NewValidator(), CookieConfig{Name: "session"})
 
 			var reqBody io.Reader
 			if str, ok := tc.Body.(string); ok {
@@ -365,7 +365,7 @@ func TestSignupErrorHandling(t *testing.T) {
 			req := httptest.NewRequest("POST", "/signup", reqBody)
 			w := httptest.NewRecorder()
 
-			resp, err := controller(w, req)
+			resp, err := ctrl.Signup(w, req)
 
 			require.Error(t, err)
 			assert.IsType(t, tc.ErrorType, err)
