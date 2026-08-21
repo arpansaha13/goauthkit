@@ -145,6 +145,7 @@ type IUserRepository = irepo.IUserRepository
 type IOTPRepository = irepo.IOTPRepository
 type ISessionRepository = irepo.ISessionRepository
 type IProviderRepository = irepo.IProviderRepository
+type QueryDB = irepo.QueryDB
 
 // Repository implementations
 type UserRepository = irepo.UserRepository
@@ -153,22 +154,22 @@ type SessionRepository = irepo.SessionRepository
 type ProviderRepository = irepo.ProviderRepository
 
 // NewUserRepository creates a new user repository
-func NewUserRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) IUserRepository {
+func NewUserRepository(db QueryDB, cb *gobreaker.CircuitBreaker[any]) IUserRepository {
 	return irepo.NewUserRepository(db, cb)
 }
 
 // NewOTPRepository creates a new OTP repository
-func NewOTPRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) IOTPRepository {
+func NewOTPRepository(db QueryDB, cb *gobreaker.CircuitBreaker[any]) IOTPRepository {
 	return irepo.NewOTPRepository(db, cb)
 }
 
 // NewSessionRepository creates a new session repository
-func NewSessionRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) ISessionRepository {
+func NewSessionRepository(db QueryDB, cb *gobreaker.CircuitBreaker[any]) ISessionRepository {
 	return irepo.NewSessionRepository(db, cb)
 }
 
 // NewProviderRepository creates a new provider repository
-func NewProviderRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) IProviderRepository {
+func NewProviderRepository(db QueryDB, cb *gobreaker.CircuitBreaker[any]) IProviderRepository {
 	return irepo.NewProviderRepository(db, cb)
 }
 

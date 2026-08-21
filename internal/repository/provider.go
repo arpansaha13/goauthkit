@@ -14,12 +14,12 @@ import (
 
 // ProviderRepository handles provider-related database operations
 type ProviderRepository struct {
-	db *gorm.DB
+	db QueryDB
 	cb *gobreaker.CircuitBreaker[any]
 }
 
 // NewProviderRepository creates a new provider repository
-func NewProviderRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) *ProviderRepository {
+func NewProviderRepository(db QueryDB, cb *gobreaker.CircuitBreaker[any]) *ProviderRepository {
 	return &ProviderRepository{db: db, cb: cb}
 }
 

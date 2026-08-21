@@ -14,12 +14,12 @@ import (
 
 // OTPRepository handles OTP-related database operations
 type OTPRepository struct {
-	db *gorm.DB
+	db QueryDB
 	cb *gobreaker.CircuitBreaker[any]
 }
 
 // NewOTPRepository creates a new OTP repository
-func NewOTPRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) *OTPRepository {
+func NewOTPRepository(db QueryDB, cb *gobreaker.CircuitBreaker[any]) *OTPRepository {
 	return &OTPRepository{db: db, cb: cb}
 }
 

@@ -14,12 +14,12 @@ import (
 
 // SessionRepository handles session-related database operations
 type SessionRepository struct {
-	db *gorm.DB
+	db QueryDB
 	cb *gobreaker.CircuitBreaker[any]
 }
 
 // NewSessionRepository creates a new session repository
-func NewSessionRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) *SessionRepository {
+func NewSessionRepository(db QueryDB, cb *gobreaker.CircuitBreaker[any]) *SessionRepository {
 	return &SessionRepository{db: db, cb: cb}
 }
 

@@ -14,12 +14,12 @@ import (
 
 // UserRepository handles user-related database operations
 type UserRepository struct {
-	db *gorm.DB
+	db QueryDB
 	cb *gobreaker.CircuitBreaker[any]
 }
 
 // NewUserRepository creates a new user repository
-func NewUserRepository(db *gorm.DB, cb *gobreaker.CircuitBreaker[any]) *UserRepository {
+func NewUserRepository(db QueryDB, cb *gobreaker.CircuitBreaker[any]) *UserRepository {
 	return &UserRepository{db: db, cb: cb}
 }
 
