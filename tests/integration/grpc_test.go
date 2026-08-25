@@ -140,7 +140,11 @@ func (s *AuthIntegrationTestSuite) TestForgotPassword() {
 
 				// Verify in DB that OTP record exists for this user and purpose
 				var otp domain.OTP
-				err = s.DB.Where("user_id = ? AND purpose = ?", user.ID, domain.OTPPurposeResetPassword).First(&otp).Error
+				err = s.DB.QueryRow(s.Ctx, `
+					SELECT id, user_id, otp_hash, hashed_code, purpose, expires_at, deleted_at, created_at
+					FROM otps WHERE user_id = $1 AND purpose = $2 AND deleted_at IS NULL`,
+					user.ID, domain.OTPPurposeResetPassword,
+				).Scan(&otp.ID, &otp.UserID, &otp.OTPHash, &otp.HashedCode, &otp.Purpose, &otp.ExpiresAt, &otp.DeletedAt, &otp.CreatedAt)
 				s.Require().NoError(err)
 				s.Require().Equal(resp.OtpHash, otp.OTPHash)
 
@@ -189,13 +193,13 @@ func (s *AuthIntegrationTestSuite) TestResetPassword() {
 				hashedCode, err := f.TestDB.Hasher.Hash(code)
 				s.Require().NoError(err)
 
-				err = s.DB.Create(&domain.OTP{
+				err = f.TestDB.InsertOTP(&domain.OTP{
 					UserID:     user.ID,
 					OTPHash:    otpHash,
 					HashedCode: hashedCode,
 					Purpose:    domain.OTPPurposeResetPassword,
 					ExpiresAt:  time.Now().Add(10 * time.Minute),
-				}).Error
+				})
 				s.Require().NoError(err)
 
 				resp, err := f.AuthClient.ResetPassword(s.Ctx, &pb.ResetPasswordRequest{
@@ -208,7 +212,8 @@ func (s *AuthIntegrationTestSuite) TestResetPassword() {
 
 				// Verify credentials password update in DB
 				var cred domain.Credentials
-				err = s.DB.Where("user_id = ?", user.ID).First(&cred).Error
+				err = s.DB.QueryRow(s.Ctx, `SELECT user_id, password_hash FROM credentials WHERE user_id = $1`, user.ID).
+					Scan(&cred.UserID, &cred.PasswordHash)
 				s.Require().NoError(err)
 				s.Require().True(f.TestDB.Hasher.Verify(cred.PasswordHash, "NewPassword123!"))
 
@@ -228,13 +233,13 @@ func (s *AuthIntegrationTestSuite) TestResetPassword() {
 				hashedCode, err := f.TestDB.Hasher.Hash(code)
 				s.Require().NoError(err)
 
-				err = s.DB.Create(&domain.OTP{
+				err = f.TestDB.InsertOTP(&domain.OTP{
 					UserID:     user.ID,
 					OTPHash:    otpHash,
 					HashedCode: hashedCode,
 					Purpose:    domain.OTPPurposeResetPassword,
 					ExpiresAt:  time.Now().Add(10 * time.Minute),
-				}).Error
+				})
 				s.Require().NoError(err)
 
 				_, err = f.AuthClient.ResetPassword(s.Ctx, &pb.ResetPasswordRequest{
@@ -262,13 +267,13 @@ func (s *AuthIntegrationTestSuite) TestResetPassword() {
 				hashedCode, err := f.TestDB.Hasher.Hash(code)
 				s.Require().NoError(err)
 
-				err = s.DB.Create(&domain.OTP{
+				err = f.TestDB.InsertOTP(&domain.OTP{
 					UserID:     user.ID,
 					OTPHash:    otpHash,
 					HashedCode: hashedCode,
 					Purpose:    domain.OTPPurposeResetPassword,
 					ExpiresAt:  time.Now().Add(10 * time.Minute),
-				}).Error
+				})
 				s.Require().NoError(err)
 
 				_, err = f.AuthClient.ResetPassword(s.Ctx, &pb.ResetPasswordRequest{
@@ -296,13 +301,13 @@ func (s *AuthIntegrationTestSuite) TestResetPassword() {
 				hashedCode, err := f.TestDB.Hasher.Hash(code)
 				s.Require().NoError(err)
 
-				err = s.DB.Create(&domain.OTP{
+				err = f.TestDB.InsertOTP(&domain.OTP{
 					UserID:     user.ID,
 					OTPHash:    otpHash,
 					HashedCode: hashedCode,
 					Purpose:    domain.OTPPurposeResetPassword,
 					ExpiresAt:  time.Now().Add(-10 * time.Minute),
-				}).Error
+				})
 				s.Require().NoError(err)
 
 				_, err = f.AuthClient.ResetPassword(s.Ctx, &pb.ResetPasswordRequest{
@@ -509,7 +514,7 @@ func (s *AuthIntegrationTestSuite) TestDeleteUser() {
 
 				// Verify database record deletion
 				var dbUser domain.User
-				err = s.DB.First(&dbUser, user.ID).Error
+				err = s.DB.QueryRow(s.Ctx, `SELECT id FROM users WHERE id = $1`, user.ID).Scan(&dbUser.ID)
 				s.Require().Error(err) // Should be record not found
 
 				return nil

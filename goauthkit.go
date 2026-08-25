@@ -1,14 +1,11 @@
 package goauthkit
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/arpansaha13/gotoolkit/gtk"
 	"github.com/sony/gobreaker/v2"
 	"google.golang.org/grpc"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	iccache "github.com/arpansaha13/goauthkit/internal/cache"
 	"github.com/arpansaha13/goauthkit/internal/controller"
@@ -101,6 +98,18 @@ type ProviderType = domain.ProviderType
 
 const (
 	ProviderTypeGoogle = domain.ProviderTypeGoogle
+)
+
+type User = domain.User
+type Credentials = domain.Credentials
+type OTPPurpose = domain.OTPPurpose
+type OTP = domain.OTP
+type Session = domain.Session
+type UserProvider = domain.UserProvider
+
+const (
+	OTPPurposeSignupVerification = domain.OTPPurposeSignupVerification
+	OTPPurposeResetPassword      = domain.OTPPurposeResetPassword
 )
 
 type ExchangeOAuthCodeRequest = isvc.ExchangeOAuthCodeRequest
@@ -299,29 +308,4 @@ func AuthorizationInterceptor() grpc.UnaryServerInterceptor {
 // NewAuthMiddleware returns an HTTP middleware that validates session tokens
 func NewAuthMiddleware(authService IAuthService, cookieName string) func(http.Handler) http.Handler {
 	return middleware.NewAuthMiddleware(authService, cookieName)
-}
-
-// ============================================================================
-// Database Helpers
-// ============================================================================
-
-// InitDB initializes a PostgreSQL database connection
-func InitDB(dsn string) (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-	return db, nil
-}
-
-// CloseDB closes the database connection
-func CloseDB(db *gorm.DB) error {
-	if db == nil {
-		return nil
-	}
-	sqlDB, err := db.DB()
-	if err != nil {
-		return fmt.Errorf("failed to get database connection: %w", err)
-	}
-	return sqlDB.Close()
 }

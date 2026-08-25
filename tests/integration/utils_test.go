@@ -11,16 +11,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arpansaha13/goauthkit"
 	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/pb"
-	"github.com/arpansaha13/goauthkit"
-	"gorm.io/gorm"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type TestFixture struct {
 	T          *testing.T
 	Ctx        context.Context
-	DB         *gorm.DB
+	DB         *pgxpool.Pool
 	HTTPClient *HTTPTestHelper
 	AuthClient pb.AuthServiceClient
 	TestDB     *TestDB
@@ -37,7 +37,7 @@ type TableDrivenTestCase struct {
 }
 
 // NewTestFixture creates a new test fixture for a test
-func NewTestFixture(t *testing.T, db *gorm.DB, httpServerAddr string, authClient pb.AuthServiceClient) *TestFixture {
+func NewTestFixture(t *testing.T, db *pgxpool.Pool, httpServerAddr string, authClient pb.AuthServiceClient) *TestFixture {
 	httpHelper := NewHTTPTestHelper(httpServerAddr)
 	return &TestFixture{
 		T:          t,
@@ -51,13 +51,13 @@ func NewTestFixture(t *testing.T, db *gorm.DB, httpServerAddr string, authClient
 
 // TestDB holds database connection and repositories
 type TestDB struct {
-	Ctx      context.Context
-	DB       *gorm.DB
-	Hasher   *goauthkit.PasswordHasher
+	Ctx    context.Context
+	DB     *pgxpool.Pool
+	Hasher *goauthkit.PasswordHasher
 }
 
 // NewTestDB creates a new test database wrapper
-func NewTestDB(ctx context.Context, db *gorm.DB) *TestDB {
+func NewTestDB(ctx context.Context, db *pgxpool.Pool) *TestDB {
 	return &TestDB{
 		Ctx:    ctx,
 		DB:     db,
@@ -80,10 +80,19 @@ func (t *TestDB) CreateTestUser(email, password string, verified bool) (*domain.
 		},
 	}
 
-	if err := t.DB.Create(user).Error; err != nil {
+	err = t.DB.QueryRow(t.Ctx, `
+		INSERT INTO users (email, username, verified, created_at)
+		VALUES ($1, $2, $3, NOW())
+		RETURNING id, created_at`,
+		user.Email, user.Username, user.Verified,
+	).Scan(&user.ID, &user.CreatedAt)
+	if err != nil {
 		return nil, err
 	}
-
+	_, err = t.DB.Exec(t.Ctx, `INSERT INTO credentials (user_id, password_hash) VALUES ($1, $2)`, user.ID, hashedPassword)
+	if err != nil {
+		return nil, err
+	}
 	return user, nil
 }
 
@@ -103,10 +112,15 @@ func (t *TestDB) CreateTestOTP(userID int64, code string) (string, error) {
 		ExpiresAt:  time.Now().Add(10 * time.Minute),
 	}
 
-	if err := t.DB.Create(otp).Error; err != nil {
+	err = t.DB.QueryRow(t.Ctx, `
+		INSERT INTO otps (user_id, otp_hash, hashed_code, purpose, expires_at, created_at)
+		VALUES ($1, $2, $3, $4, $5, NOW())
+		RETURNING id`,
+		otp.UserID, otp.OTPHash, otp.HashedCode, otp.Purpose, otp.ExpiresAt,
+	).Scan(&otp.ID)
+	if err != nil {
 		return "", err
 	}
-
 	return otpHash, nil
 }
 
@@ -125,11 +139,25 @@ func (t *TestDB) CreateTestSession(userID int64) (string, error) {
 		ExpiresAt: time.Now().Add(24 * time.Hour),
 	}
 
-	if err := t.DB.Create(session).Error; err != nil {
+	err := t.DB.QueryRow(t.Ctx, `
+		INSERT INTO sessions (user_id, token_hash, expires_at, created_at)
+		VALUES ($1, $2, $3, NOW())
+		RETURNING id`,
+		session.UserID, session.TokenHash, session.ExpiresAt,
+	).Scan(&session.ID)
+	if err != nil {
 		return "", err
 	}
-
 	return token, nil
+}
+
+func (t *TestDB) InsertOTP(otp *domain.OTP) error {
+	return t.DB.QueryRow(t.Ctx, `
+		INSERT INTO otps (user_id, otp_hash, hashed_code, purpose, expires_at, created_at)
+		VALUES ($1, $2, $3, $4, $5, NOW())
+		RETURNING id, created_at`,
+		otp.UserID, otp.OTPHash, otp.HashedCode, otp.Purpose, otp.ExpiresAt,
+	).Scan(&otp.ID, &otp.CreatedAt)
 }
 
 // HTTPTestHelper provides HTTP client functionality for tests

@@ -228,7 +228,8 @@ func (s *AuthIntegrationTestSuite) TestLogout() {
 				tokenHash := hex.EncodeToString(hasher.Sum(nil))
 
 				var count int64
-				s.DB.Table("sessions").Where("token_hash = ? AND deleted_at IS NULL", tokenHash).Count(&count)
+				err = s.DB.QueryRow(s.Ctx, `SELECT COUNT(*) FROM sessions WHERE token_hash = $1 AND deleted_at IS NULL`, tokenHash).Scan(&count)
+				s.Require().NoError(err)
 				s.Require().Equal(int64(0), count)
 
 				// Check if cookie is cleared

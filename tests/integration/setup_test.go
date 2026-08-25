@@ -5,21 +5,21 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/arpansaha13/gotoolkit/gtk"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sony/gobreaker/v2"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"github.com/arpansaha13/goauthkit"
-	"github.com/arpansaha13/goauthkit/internal/domain"
 	"github.com/arpansaha13/goauthkit/internal/middleware"
 	"github.com/arpansaha13/goauthkit/pb"
 	"github.com/arpansaha13/goauthkit/tests/mocks"
@@ -28,7 +28,7 @@ import (
 type AuthIntegrationTestSuite struct {
 	suite.Suite
 	Container     testcontainers.Container
-	DB            *gorm.DB
+	DB            *pgxpool.Pool
 	Ctx           context.Context
 	ServerAddr    string
 	HTTPServer    *http.Server
@@ -68,20 +68,22 @@ func (s *AuthIntegrationTestSuite) SetupSuite() {
 
 	host, _ := container.Host(ctx)
 	port, _ := container.MappedPort(ctx, "5432")
-	dsn := fmt.Sprintf("host=%s port=%s user=testuser password=testpass dbname=test_auth_integration sslmode=disable", host, port.Port())
+	dsn := fmt.Sprintf("postgres://testuser:testpass@%s:%s/test_auth_integration?sslmode=disable", host, port.Port())
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	pool, err := pgxpool.New(ctx, dsn)
 	s.Require().NoError(err, "Failed to connect to database")
-	s.DB = db
+	s.DB = pool
 
-	err = domain.AutoMigrate(db)
+	migrationSQL, err := os.ReadFile(filepath.Join("..", "..", "migrations", "0001_initial_schema.up.sql"))
+	s.Require().NoError(err, "Failed to read migration")
+	_, err = pool.Exec(ctx, string(migrationSQL))
 	s.Require().NoError(err, "Failed to run migrations")
 
 	// Set up dependencies
 	cb := gobreaker.NewCircuitBreaker[any](gobreaker.Settings{Name: "test-postgres"})
-	userRepo := goauthkit.NewUserRepository(db, cb)
-	otpRepo := goauthkit.NewOTPRepository(db, cb)
-	sessionRepo := goauthkit.NewSessionRepository(db, cb)
+	userRepo := goauthkit.NewUserRepository(pool, cb)
+	otpRepo := goauthkit.NewOTPRepository(pool, cb)
+	sessionRepo := goauthkit.NewSessionRepository(pool, cb)
 	hasher := goauthkit.NewPasswordHasher()
 
 	emailProviderInterface := goauthkit.NewMockEmailProvider()
@@ -91,7 +93,7 @@ func (s *AuthIntegrationTestSuite) SetupSuite() {
 		emailProviderInterface,
 	)
 
-	providerRepo := goauthkit.NewProviderRepository(db, cb)
+	providerRepo := goauthkit.NewProviderRepository(pool, cb)
 	sessionCache := &mocks.MockSessionCache{}
 	s.AuthService, err = goauthkit.NewAuthService(
 		userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher,
@@ -126,6 +128,9 @@ func (s *AuthIntegrationTestSuite) TearDownSuite() {
 	if s.EmailPool != nil {
 		s.EmailPool.Stop()
 	}
+	if s.DB != nil {
+		s.DB.Close()
+	}
 }
 
 func (s *AuthIntegrationTestSuite) SetupTest() {
@@ -136,7 +141,7 @@ func (s *AuthIntegrationTestSuite) SetupTest() {
 func (s *AuthIntegrationTestSuite) cleanupTables() {
 	tables := []string{"sessions", "otps", "credentials", "users"}
 	for _, table := range tables {
-		s.DB.Exec(fmt.Sprintf("TRUNCATE TABLE %s CASCADE", table))
+		_, _ = s.DB.Exec(s.Ctx, fmt.Sprintf("TRUNCATE TABLE %s CASCADE", table))
 	}
 }
 
