@@ -70,20 +70,20 @@ func (s *AuthIntegrationTestSuite) SetupSuite() {
 	port, _ := container.MappedPort(ctx, "5432")
 	dsn := fmt.Sprintf("postgres://testuser:testpass@%s:%s/test_auth_integration?sslmode=disable", host, port.Port())
 
-	pool, err := pgxpool.New(ctx, dsn)
-	s.Require().NoError(err, "Failed to connect to database")
-	s.DB = pool
+	pg := gtk.NewPostgresClient(ctx, gtk.PostgresClientConfig{DatabaseURL: dsn})
+	s.Require().NoError(pg.Start(), "Failed to connect to database")
+	s.DB = pg.Pool()
 
 	migrationSQL, err := os.ReadFile(filepath.Join("..", "..", "migrations", "0001_initial_schema.up.sql"))
 	s.Require().NoError(err, "Failed to read migration")
-	_, err = pool.Exec(ctx, string(migrationSQL))
+	_, err = s.DB.Exec(ctx, string(migrationSQL))
 	s.Require().NoError(err, "Failed to run migrations")
 
 	// Set up dependencies
 	cb := gobreaker.NewCircuitBreaker[any](gobreaker.Settings{Name: "test-postgres"})
-	userRepo := goauthkit.NewUserRepository(pool, cb)
-	otpRepo := goauthkit.NewOTPRepository(pool, cb)
-	sessionRepo := goauthkit.NewSessionRepository(pool, cb)
+	userRepo := goauthkit.NewUserRepository(pg, cb)
+	otpRepo := goauthkit.NewOTPRepository(pg, cb)
+	sessionRepo := goauthkit.NewSessionRepository(pg, cb)
 	hasher := goauthkit.NewPasswordHasher()
 
 	emailProviderInterface := goauthkit.NewMockEmailProvider()
@@ -93,7 +93,7 @@ func (s *AuthIntegrationTestSuite) SetupSuite() {
 		emailProviderInterface,
 	)
 
-	providerRepo := goauthkit.NewProviderRepository(pool, cb)
+	providerRepo := goauthkit.NewProviderRepository(pg, cb)
 	sessionCache := &mocks.MockSessionCache{}
 	s.AuthService, err = goauthkit.NewAuthService(
 		userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher,
