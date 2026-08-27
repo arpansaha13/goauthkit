@@ -1,6 +1,7 @@
 package goauthkit
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/arpansaha13/gotoolkit/gtk"
@@ -84,7 +85,7 @@ type AuthService = isvc.AuthService
 type AuthServiceConfig = isvc.AuthServiceConfig
 type UserCreatedEvent = isvc.UserCreatedEvent
 type LogoutEvent = isvc.LogoutEvent
-type AuthServiceHooks = isvc.AuthServiceHooks
+type AuthEventBus = isvc.AuthEventBus
 
 // Request/Response types
 type SignupRequest = isvc.SignupRequest
@@ -140,9 +141,15 @@ func NewAuthService(
 	hasher *PasswordHasher,
 	emailPool *EmailWorkerPool,
 	config AuthServiceConfig,
-	hooks *AuthServiceHooks,
+	eventBus *AuthEventBus,
 ) (IAuthService, error) {
-	return isvc.NewAuthService(userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher, emailPool, config, hooks)
+	return isvc.NewAuthService(userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher, emailPool, config, eventBus)
+}
+
+// NewAuthEventBus returns the auth-service event bus.
+// ctx cancellation unsubscribes every topic listener.
+func NewAuthEventBus(ctx context.Context) *AuthEventBus {
+	return isvc.NewAuthEventBus(ctx)
 }
 
 // ============================================================================

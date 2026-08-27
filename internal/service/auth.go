@@ -31,25 +31,19 @@ type AuthService struct {
 	hasher       *utils.PasswordHasher
 	emailPool    *worker.EmailWorkerPool
 	config       AuthServiceConfig
-	hooks        *AuthServiceHooks
+	eventBus     *AuthEventBus
 	sf           singleflight.Group
 }
 
-// UserCreatedEvent encapsulates data for the user creation hook
+// UserCreatedEvent is published after a new user row is created.
 type UserCreatedEvent struct {
 	UserID     int64
 	GlobalName string
 }
 
-// LogoutEvent encapsulates data for the logout hook
+// LogoutEvent is published after a session is invalidated.
 type LogoutEvent struct {
 	UserID int64
-}
-
-// AuthServiceHooks contains optional callbacks for auth service lifecycle events
-type AuthServiceHooks struct {
-	OnUserCreated func(ctx context.Context, event UserCreatedEvent) error
-	OnLogout      func(ctx context.Context, event LogoutEvent) error
 }
 
 // AuthServiceConfig holds configuration for the auth service.
@@ -70,7 +64,7 @@ func NewAuthService(
 	hasher *utils.PasswordHasher,
 	emailPool *worker.EmailWorkerPool,
 	config AuthServiceConfig,
-	hooks *AuthServiceHooks,
+	eventBus *AuthEventBus,
 ) (*AuthService, error) {
 	if userRepo == nil {
 		return nil, fmt.Errorf("userRepo is required")
@@ -93,6 +87,9 @@ func NewAuthService(
 	if emailPool == nil {
 		return nil, fmt.Errorf("emailPool is required")
 	}
+	if eventBus == nil {
+		eventBus = NewAuthEventBus(context.Background())
+	}
 	return &AuthService{
 		userRepo:     userRepo,
 		otpRepo:      otpRepo,
@@ -102,7 +99,7 @@ func NewAuthService(
 		hasher:       hasher,
 		emailPool:    emailPool,
 		config:       config,
-		hooks:        hooks,
+		eventBus:     eventBus,
 	}, nil
 }
 
@@ -154,13 +151,10 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 		return nil, &gtk.InternalError{Message: "failed to create user", Err: err}
 	}
 
-	// Trigger OnUserCreated hook
-	if s.hooks != nil && s.hooks.OnUserCreated != nil {
-		_ = s.hooks.OnUserCreated(ctx, UserCreatedEvent{
-			UserID:     newUser.ID,
-			GlobalName: req.GlobalName,
-		})
-	}
+	s.eventBus.UserCreated.Publish(UserCreatedEvent{
+		UserID:     newUser.ID,
+		GlobalName: req.GlobalName,
+	})
 
 	// Generate and send OTP
 	otp, err := utils.GenerateOTP(s.config.OTPLength)
@@ -398,13 +392,10 @@ func (s *AuthService) ExchangeOAuthCode(ctx context.Context, req ExchangeOAuthCo
 		return nil, &gtk.InternalError{Message: "failed to create user", Err: err}
 	}
 
-	// Trigger OnUserCreated hook for new OAuth registration
-	if s.hooks != nil && s.hooks.OnUserCreated != nil {
-		_ = s.hooks.OnUserCreated(ctx, UserCreatedEvent{
-			UserID:     newUser.ID,
-			GlobalName: claims.Name,
-		})
-	}
+	s.eventBus.UserCreated.Publish(UserCreatedEvent{
+		UserID:     newUser.ID,
+		GlobalName: claims.Name,
+	})
 
 
 	// Link provider
@@ -615,12 +606,7 @@ func (s *AuthService) Logout(ctx context.Context, req LogoutRequest) (*LogoutRes
 	// Invalidate session in cache (best-effort)
 	_ = s.sessionCache.InvalidateSessionToken(ctx, tokenHash)
 
-	// Trigger OnLogout hook
-	if s.hooks != nil && s.hooks.OnLogout != nil {
-		_ = s.hooks.OnLogout(ctx, LogoutEvent{
-			UserID: session.UserID,
-		})
-	}
+	s.eventBus.Logout.Publish(LogoutEvent{UserID: session.UserID})
 
 	return &LogoutResponse{
 		Message: "logout successful",
