@@ -191,9 +191,9 @@ type ISessionCache = iccache.ISessionCache
 // Cache implementations
 type MemcachedSessionCache = iccache.MemcachedSessionCache
 
-// NewMemcachedSessionCache creates a new session cache backed by memcached client wrapper
-func NewMemcachedSessionCache(client *gtk.MemcachedClient, cb *gobreaker.CircuitBreaker[any]) ISessionCache {
-	return iccache.NewMemcachedSessionCache(client, cb)
+// NewMemcachedSessionCache creates a new session cache backed by a memcached client.
+func NewMemcachedSessionCache(client *gtk.MemcachedClient) ISessionCache {
+	return iccache.NewMemcachedSessionCache(client)
 }
 
 // NewNoopSessionCache creates a new no-op session cache
