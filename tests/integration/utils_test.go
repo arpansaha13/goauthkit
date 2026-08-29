@@ -1,4 +1,4 @@
-package tests
+package integration_test
 
 import (
 	"bytes"
@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arpansaha13/goauthkit"
-	"github.com/arpansaha13/goauthkit/internal/domain"
+	"github.com/arpansaha13/goauthkit/domain"
 	"github.com/arpansaha13/goauthkit/pb"
+	"github.com/arpansaha13/goauthkit/utils"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -53,7 +53,7 @@ func NewTestFixture(t *testing.T, db *pgxpool.Pool, httpServerAddr string, authC
 type TestDB struct {
 	Ctx    context.Context
 	DB     *pgxpool.Pool
-	Hasher *goauthkit.PasswordHasher
+	Hasher *utils.PasswordHasher
 }
 
 // NewTestDB creates a new test database wrapper
@@ -61,7 +61,7 @@ func NewTestDB(ctx context.Context, db *pgxpool.Pool) *TestDB {
 	return &TestDB{
 		Ctx:    ctx,
 		DB:     db,
-		Hasher: goauthkit.NewPasswordHasher(),
+		Hasher: utils.NewPasswordHasher(),
 	}
 }
 
@@ -98,7 +98,7 @@ func (t *TestDB) CreateTestUser(email, password string, verified bool) (*domain.
 
 // CreateTestOTP creates a test OTP
 func (t *TestDB) CreateTestOTP(userID int64, code string) (string, error) {
-	otpHash, _ := goauthkit.GenerateToken(32)
+	otpHash, _ := utils.GenerateToken(32)
 	hashedCode, err := t.Hasher.Hash(code)
 	if err != nil {
 		return "", err
@@ -126,7 +126,7 @@ func (t *TestDB) CreateTestOTP(userID int64, code string) (string, error) {
 
 // CreateTestSession creates a test session
 func (t *TestDB) CreateTestSession(userID int64) (string, error) {
-	token, _ := goauthkit.GenerateToken(32)
+	token, _ := utils.GenerateToken(32)
 	// Hash token using the same logic as AuthService (token + secret)
 	// We use "test-secret" in setup_test.go
 	hasher := sha256.New()

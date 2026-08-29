@@ -3,7 +3,7 @@ module github.com/arpansaha13/goauthkit
 go 1.25.6
 
 require (
-	github.com/arpansaha13/gotoolkit v0.18.0
+	github.com/arpansaha13/gotoolkit v0.19.0
 	github.com/bradfitz/gomemcache v0.0.0-20250403215159-8d39553ac7cf
 	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/go-playground/validator/v10 v10.30.1

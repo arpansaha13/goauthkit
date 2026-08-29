@@ -1,4 +1,4 @@
-package tests
+package integration_test
 
 import (
 	"fmt"
@@ -8,9 +8,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/arpansaha13/goauthkit"
-	"github.com/arpansaha13/goauthkit/internal/domain"
+	"github.com/arpansaha13/goauthkit/domain"
 	"github.com/arpansaha13/goauthkit/pb"
+	"github.com/arpansaha13/goauthkit/utils"
 )
 
 func (s *AuthIntegrationTestSuite) TestValidateSession() {
@@ -187,7 +187,7 @@ func (s *AuthIntegrationTestSuite) TestResetPassword() {
 				s.Require().NoError(err)
 
 				code := "654321"
-				otpHash, err := goauthkit.GenerateToken(32)
+				otpHash, err := utils.GenerateToken(32)
 				s.Require().NoError(err)
 
 				hashedCode, err := f.TestDB.Hasher.Hash(code)
@@ -227,7 +227,7 @@ func (s *AuthIntegrationTestSuite) TestResetPassword() {
 				s.Require().NoError(err)
 
 				code := "654321"
-				otpHash, err := goauthkit.GenerateToken(32)
+				otpHash, err := utils.GenerateToken(32)
 				s.Require().NoError(err)
 
 				hashedCode, err := f.TestDB.Hasher.Hash(code)
@@ -261,7 +261,7 @@ func (s *AuthIntegrationTestSuite) TestResetPassword() {
 				s.Require().NoError(err)
 
 				code := "654321"
-				otpHash, err := goauthkit.GenerateToken(32)
+				otpHash, err := utils.GenerateToken(32)
 				s.Require().NoError(err)
 
 				hashedCode, err := f.TestDB.Hasher.Hash(code)
@@ -295,7 +295,7 @@ func (s *AuthIntegrationTestSuite) TestResetPassword() {
 				s.Require().NoError(err)
 
 				code := "654321"
-				otpHash, err := goauthkit.GenerateToken(32)
+				otpHash, err := utils.GenerateToken(32)
 				s.Require().NoError(err)
 
 				hashedCode, err := f.TestDB.Hasher.Hash(code)

@@ -1,4 +1,4 @@
-package tests
+package integration_test
 
 import (
 	"context"
@@ -19,10 +19,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/arpansaha13/goauthkit"
-	"github.com/arpansaha13/goauthkit/internal/middleware"
+	"github.com/arpansaha13/goauthkit/controller"
+	"github.com/arpansaha13/goauthkit/middleware"
 	"github.com/arpansaha13/goauthkit/pb"
-	"github.com/arpansaha13/goauthkit/tests/mocks"
+	"github.com/arpansaha13/goauthkit/repository"
+	"github.com/arpansaha13/goauthkit/service"
+	"github.com/arpansaha13/goauthkit/utils"
+	"github.com/arpansaha13/goauthkit/worker"
 )
 
 type AuthIntegrationTestSuite struct {
@@ -35,9 +38,9 @@ type AuthIntegrationTestSuite struct {
 	GRPCServer    *grpc.Server
 	GRPCConn      *grpc.ClientConn
 	GRPCClient    pb.AuthServiceClient
-	AuthService   goauthkit.IAuthService
-	EmailPool     *goauthkit.EmailWorkerPool
-	EmailProvider *goauthkit.MockEmailProvider
+	AuthService   service.IAuthService
+	EmailPool     *worker.EmailWorkerPool
+	EmailProvider *worker.MockEmailProvider
 	Fixture       *TestFixture
 }
 
@@ -81,24 +84,23 @@ func (s *AuthIntegrationTestSuite) SetupSuite() {
 
 	// Set up dependencies
 	cb := gobreaker.NewCircuitBreaker[any](gobreaker.Settings{Name: "test-postgres"})
-	userRepo := goauthkit.NewUserRepository(pg, cb)
-	otpRepo := goauthkit.NewOTPRepository(pg, cb)
-	sessionRepo := goauthkit.NewSessionRepository(pg, cb)
-	hasher := goauthkit.NewPasswordHasher()
+	userRepo := repository.NewUserRepository(pg, cb)
+	otpRepo := repository.NewOTPRepository(pg, cb)
+	sessionRepo := repository.NewSessionRepository(pg, cb)
+	hasher := utils.NewPasswordHasher()
 
-	emailProviderInterface := goauthkit.NewMockEmailProvider()
-	s.EmailProvider = emailProviderInterface.(*goauthkit.MockEmailProvider)
-	s.EmailPool = goauthkit.NewEmailWorkerPool(
-		goauthkit.EmailWorkerPoolConfig{WorkerCount: 2, QueueSize: 50},
-		emailProviderInterface,
+	s.EmailProvider = worker.NewMockEmailProvider()
+	s.EmailPool = worker.NewEmailWorkerPool(
+		worker.EmailWorkerPoolConfig{WorkerCount: 2, QueueSize: 50},
+		s.EmailProvider,
 	)
 
-	providerRepo := goauthkit.NewProviderRepository(pg, cb)
-	sessionCache := &mocks.MockSessionCache{}
-	s.AuthService, err = goauthkit.NewAuthService(
+	providerRepo := repository.NewProviderRepository(pg, cb)
+	sessionCache := &MockSessionCache{}
+	s.AuthService, err = service.NewAuthService(
 		userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher,
 		s.EmailPool,
-		goauthkit.AuthServiceConfig{
+		service.AuthServiceConfig{
 			OTPExpiry:  10 * time.Minute,
 			OTPLength:  6,
 			SessionTTL: 30 * time.Minute,
@@ -146,10 +148,10 @@ func (s *AuthIntegrationTestSuite) cleanupTables() {
 }
 
 func (s *AuthIntegrationTestSuite) setupHTTPServer() {
-	validator := goauthkit.NewValidator()
-	cookieConfig := goauthkit.NewCookieConfig("test_session", false)
+	validator := utils.NewValidator()
+	cookieConfig := controller.NewCookieConfig("test_session", false)
 
-	authCtrl := goauthkit.NewAuthController(s.AuthService, validator, cookieConfig)
+	authCtrl := controller.NewAuthController(s.AuthService, validator, cookieConfig)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/auth/signup", gtk.HttpControllerAdaptor(authCtrl.Signup))
@@ -181,8 +183,8 @@ func (s *AuthIntegrationTestSuite) setupGRPCServer() {
 		)),
 	)
 
-	validator := goauthkit.NewValidator()
-	authServiceImpl := goauthkit.NewAuthServiceImpl(s.AuthService, validator)
+	validator := utils.NewValidator()
+	authServiceImpl := controller.NewAuthServiceImpl(s.AuthService, validator)
 	pb.RegisterAuthServiceServer(s.GRPCServer, authServiceImpl)
 
 	go func() {

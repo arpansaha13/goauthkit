@@ -1,4 +1,4 @@
-package tests
+package integration_test
 
 import (
 	"crypto/sha256"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/arpansaha13/goauthkit"
+	"github.com/arpansaha13/goauthkit/service"
 )
 
 func (s *AuthIntegrationTestSuite) TestSignup() {
@@ -14,7 +14,7 @@ func (s *AuthIntegrationTestSuite) TestSignup() {
 		{
 			Name: "Successful Signup",
 			Test: func(f *TestFixture) error {
-				payload := goauthkit.SignupRequest{
+				payload := service.SignupRequest{
 					Email:           "signup@example.com",
 					Password:        "Password123!",
 					ConfirmPassword: "Password123!",
@@ -31,7 +31,7 @@ func (s *AuthIntegrationTestSuite) TestSignup() {
 		{
 			Name: "Invalid Email",
 			Test: func(f *TestFixture) error {
-				payload := goauthkit.SignupRequest{
+				payload := service.SignupRequest{
 					Email:           "invalid-email",
 					Password:        "Password123!",
 					ConfirmPassword: "Password123!",
@@ -70,7 +70,7 @@ func (s *AuthIntegrationTestSuite) TestLogin() {
 				return err
 			},
 			Test: func(f *TestFixture) error {
-				payload := goauthkit.LoginRequest{
+				payload := service.LoginRequest{
 					Email:    "login@example.com",
 					Password: "Password123!",
 				}
@@ -102,7 +102,7 @@ func (s *AuthIntegrationTestSuite) TestLogin() {
 				return err
 			},
 			Test: func(f *TestFixture) error {
-				payload := goauthkit.LoginRequest{
+				payload := service.LoginRequest{
 					Email:    "wrong@example.com",
 					Password: "WrongPassword123!",
 				}
@@ -121,7 +121,7 @@ func (s *AuthIntegrationTestSuite) TestLogin() {
 				return err
 			},
 			Test: func(f *TestFixture) error {
-				payload := goauthkit.LoginRequest{
+				payload := service.LoginRequest{
 					Email:    "unverified@example.com",
 					Password: "Password123!",
 				}
@@ -158,7 +158,7 @@ func (s *AuthIntegrationTestSuite) TestVerifyOTP() {
 				code := "123456"
 				otpHash, _ := f.TestDB.CreateTestOTP(user.ID, code)
 
-				payload := goauthkit.VerifyOTPRequest{
+				payload := service.VerifyOTPRequest{
 					OTPHash: otpHash,
 					Code:    code,
 				}
@@ -176,7 +176,7 @@ func (s *AuthIntegrationTestSuite) TestVerifyOTP() {
 				user, _ := f.TestDB.CreateTestUser("invalid-code@example.com", "Password123!", false)
 				otpHash, _ := f.TestDB.CreateTestOTP(user.ID, "123456")
 
-				payload := goauthkit.VerifyOTPRequest{
+				payload := service.VerifyOTPRequest{
 					OTPHash: otpHash,
 					Code:    "654321",
 				}
