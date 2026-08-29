@@ -466,6 +466,7 @@ type ValidateSessionRequest struct {
 type ValidateSessionResponse struct {
 	UserID int64
 	Valid  bool
+	User   *UserData
 }
 
 // ValidateSession validates a session token
@@ -482,22 +483,25 @@ func (s *AuthService) ValidateSession(ctx context.Context, req ValidateSessionRe
 
 		// Try cache first
 		valid, userID, err := s.sessionCache.IsTokenValid(detachedCtx, tokenHash)
-		if err == nil {
-			return &ValidateSessionResponse{
-				UserID: userID,
-				Valid:  valid,
-			}, nil
+		if err != nil {
+			valid, userID, err = s.sessionRepo.IsTokenValid(detachedCtx, tokenHash)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if !valid {
+			return &ValidateSessionResponse{Valid: false}, nil
 		}
 
-		// Fall back to repository
-		valid, userID, err = s.sessionRepo.IsTokenValid(detachedCtx, tokenHash)
+		userResp, err := s.GetUser(detachedCtx, GetUserRequest{UserID: userID})
 		if err != nil {
 			return nil, err
 		}
-
+		user := userResp.User
 		return &ValidateSessionResponse{
 			UserID: userID,
-			Valid:  valid,
+			Valid:  true,
+			User:   &user,
 		}, nil
 	})
 

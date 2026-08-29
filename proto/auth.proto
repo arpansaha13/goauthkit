@@ -10,7 +10,7 @@ import "google/protobuf/timestamp.proto";
 service AuthService {
     // ValidateSession validates an active session token.
     // Token is extracted from request metadata (Authorization header).
-    // Returns user_id and validity status.
+    // Returns validity, user_id, and user info when the session is valid.
     rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
 
     // RefreshSession extends the TTL of an active session.
@@ -85,10 +85,11 @@ message LoginResponse {
 // Token should be in Authorization header as "Bearer <token>".
 message ValidateSessionRequest {}
 
-// ValidateSessionResponse returns user_id and token validity status.
+// ValidateSessionResponse returns validity and the authenticated user.
 message ValidateSessionResponse {
     int64 user_id = 1; // Bigint ID of the authenticated user
     bool valid = 2; // True if token is valid and not expired
+    UserData user = 3; // User info when valid; unset when invalid
 }
 
 // RefreshSessionRequest is empty; token is extracted from metadata.

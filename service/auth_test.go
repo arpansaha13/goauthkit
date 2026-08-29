@@ -238,7 +238,18 @@ func TestAuthService_ValidateSession(t *testing.T) {
 			name:  "valid session token",
 			token: "valid_token_123",
 			mockUserRepo: func() *MockUserRepository {
-				return &MockUserRepository{}
+				username := "alice"
+				return &MockUserRepository{
+					GetByIDFunc: func(ctx context.Context, userID int64) (*domain.User, error) {
+						return &domain.User{
+							ID:        userID,
+							Email:     "alice@example.com",
+							Username:  &username,
+							Verified:  true,
+							CreatedAt: time.Unix(1, 0).UTC(),
+						}, nil
+					},
+				}
 			},
 			mockOTPRepo: func() *MockOTPRepository {
 				return &MockOTPRepository{}
@@ -254,6 +265,10 @@ func TestAuthService_ValidateSession(t *testing.T) {
 			validateResponse: func(t *testing.T, resp *service.ValidateSessionResponse) {
 				assert.Equal(t, int64(1), resp.UserID)
 				assert.True(t, resp.Valid)
+				require.NotNil(t, resp.User)
+				assert.Equal(t, "alice@example.com", resp.User.Email)
+				assert.Equal(t, "alice", resp.User.Username)
+				assert.True(t, resp.User.Verified)
 			},
 		},
 		{
@@ -276,6 +291,7 @@ func TestAuthService_ValidateSession(t *testing.T) {
 			validateResponse: func(t *testing.T, resp *service.ValidateSessionResponse) {
 				assert.Equal(t, int64(0), resp.UserID)
 				assert.False(t, resp.Valid)
+				assert.Nil(t, resp.User)
 			},
 		},
 	}

@@ -44,10 +44,14 @@ func (s *AuthServiceImpl) ValidateSession(ctx context.Context, req *pb.ValidateS
 		return nil, err
 	}
 
-	return &pb.ValidateSessionResponse{
+	out := &pb.ValidateSessionResponse{
 		UserId: resp.UserID,
 		Valid:  resp.Valid,
-	}, nil
+	}
+	if resp.User != nil {
+		out.User = userDataToPB(*resp.User)
+	}
+	return out, nil
 }
 
 // RefreshSession extends a valid session

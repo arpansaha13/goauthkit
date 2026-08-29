@@ -31,6 +31,8 @@ func (s *AuthIntegrationTestSuite) TestValidateSession() {
 				s.Require().NoError(err)
 				s.Require().True(resp.Valid)
 				s.Require().Equal(user.ID, resp.UserId)
+				s.Require().NotNil(resp.User)
+				s.Require().Equal(user.Email, resp.User.Email)
 				return nil
 			},
 		},

@@ -28,6 +28,7 @@
     "sslmode",
     "stretchr",
     "testcontainers",
+    "timestamppb",
     "unary",
     "uuid",
     "validator"

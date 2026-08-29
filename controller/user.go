@@ -32,13 +32,7 @@ func (s *AuthServiceImpl) GetUser(ctx context.Context, req *pb.GetUserRequest) (
 	}
 
 	return &pb.GetUserResponse{
-		User: &pb.UserData{
-			UserId:    resp.User.UserID,
-			Email:     resp.User.Email,
-			Username:  resp.User.Username,
-			Verified:  resp.User.Verified,
-			CreatedAt: timestamppb.New(resp.User.CreatedAt),
-		},
+		User: userDataToPB(resp.User),
 	}, nil
 }
 
@@ -62,13 +56,7 @@ func (s *AuthServiceImpl) GetUserByEmail(ctx context.Context, req *pb.GetUserByE
 	}
 
 	return &pb.GetUserByEmailResponse{
-		User: &pb.UserData{
-			UserId:    resp.User.UserID,
-			Email:     resp.User.Email,
-			Username:  resp.User.Username,
-			Verified:  resp.User.Verified,
-			CreatedAt: timestamppb.New(resp.User.CreatedAt),
-		},
+		User: userDataToPB(resp.User),
 	}, nil
 }
 
@@ -97,6 +85,16 @@ func (s *AuthServiceImpl) DeleteUser(ctx context.Context, req *pb.DeleteUserRequ
 }
 
 // Private helper and validation methods
+
+func userDataToPB(u service.UserData) *pb.UserData {
+	return &pb.UserData{
+		UserId:    u.UserID,
+		Email:     u.Email,
+		Username:  u.Username,
+		Verified:  u.Verified,
+		CreatedAt: timestamppb.New(u.CreatedAt),
+	}
+}
 
 func (s *AuthServiceImpl) validateGetUserRequest(req *pb.GetUserRequest) error {
 	if req.UserId <= 0 {

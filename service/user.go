@@ -38,6 +38,9 @@ func (s *AuthService) GetUser(ctx context.Context, req GetUserRequest) (*GetUser
 		if err != nil {
 			return nil, err
 		}
+		if user == nil {
+			return nil, &gtk.RecordNotFoundError{}
+		}
 
 		username := ""
 		if user.Username != nil {
