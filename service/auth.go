@@ -15,7 +15,6 @@ import (
 	"github.com/arpansaha13/goauthkit/domain"
 	"github.com/arpansaha13/goauthkit/repository"
 	"github.com/arpansaha13/goauthkit/utils"
-	"github.com/arpansaha13/goauthkit/worker"
 	"github.com/arpansaha13/gotoolkit/gtk"
 )
 
@@ -29,7 +28,6 @@ type AuthService struct {
 	providerRepo repository.IProviderRepository
 	sessionCache cache.ISessionCache
 	hasher       *utils.PasswordHasher
-	emailPool    *worker.EmailWorkerPool
 	config       AuthServiceConfig
 	eventBus     *AuthEventBus
 	sf           singleflight.Group
@@ -44,6 +42,13 @@ type UserCreatedEvent struct {
 // LogoutEvent is published after a session is invalidated.
 type LogoutEvent struct {
 	UserID int64
+}
+
+// OTPIssuedEvent is published after a plaintext OTP is created for email delivery.
+type OTPIssuedEvent struct {
+	Email   string
+	Purpose domain.OTPPurpose
+	OTP     string
 }
 
 // AuthServiceConfig holds configuration for the auth service.
@@ -62,7 +67,6 @@ func NewAuthService(
 	providerRepo repository.IProviderRepository,
 	sessionCache cache.ISessionCache,
 	hasher *utils.PasswordHasher,
-	emailPool *worker.EmailWorkerPool,
 	config AuthServiceConfig,
 	eventBus *AuthEventBus,
 ) (*AuthService, error) {
@@ -84,9 +88,6 @@ func NewAuthService(
 	if hasher == nil {
 		return nil, fmt.Errorf("hasher is required")
 	}
-	if emailPool == nil {
-		return nil, fmt.Errorf("emailPool is required")
-	}
 	if eventBus == nil {
 		eventBus = NewAuthEventBus(context.Background())
 	}
@@ -97,7 +98,6 @@ func NewAuthService(
 		providerRepo: providerRepo,
 		sessionCache: sessionCache,
 		hasher:       hasher,
-		emailPool:    emailPool,
 		config:       config,
 		eventBus:     eventBus,
 	}, nil
@@ -186,12 +186,10 @@ func (s *AuthService) Signup(ctx context.Context, req SignupRequest) (*SignupRes
 		return nil, &gtk.InternalError{Message: "failed to store otp", Err: err}
 	}
 
-	// Enqueue email task with OTP details
-	emailBody := fmt.Sprintf("Your OTP is: %s\n\nThis code expires in 10 minutes.", otp)
-	s.emailPool.Enqueue(worker.EmailTask{
-		Recipient: req.Email,
-		Subject:   "Verify Your Email",
-		Body:      emailBody,
+	s.eventBus.OTPIssued.Publish(OTPIssuedEvent{
+		Email:   req.Email,
+		Purpose: domain.OTPPurposeSignupVerification,
+		OTP:     otp,
 	})
 
 	return &SignupResponse{
@@ -678,12 +676,10 @@ func (s *AuthService) ForgotPassword(ctx context.Context, req ForgotPasswordRequ
 		return nil, &gtk.InternalError{Message: "failed to store otp", Err: err}
 	}
 
-	// Enqueue email task with OTP details
-	emailBody := fmt.Sprintf("Your password reset OTP is: %s\n\nThis code expires in 10 minutes.", otp)
-	s.emailPool.Enqueue(worker.EmailTask{
-		Recipient: req.Email,
-		Subject:   "Reset Your Password",
-		Body:      emailBody,
+	s.eventBus.OTPIssued.Publish(OTPIssuedEvent{
+		Email:   req.Email,
+		Purpose: domain.OTPPurposeResetPassword,
+		OTP:     otp,
 	})
 
 	return &ForgotPasswordResponse{

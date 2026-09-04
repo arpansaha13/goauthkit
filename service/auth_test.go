@@ -2,8 +2,6 @@ package service_test
 
 import (
 	"context"
-	"log"
-	"sync"
 	"testing"
 	"time"
 
@@ -14,22 +12,7 @@ import (
 	"github.com/arpansaha13/goauthkit/domain"
 	"github.com/arpansaha13/goauthkit/service"
 	"github.com/arpansaha13/goauthkit/utils"
-	"github.com/arpansaha13/goauthkit/worker"
 )
-
-// MockEmailProvider is a test implementation of EmailProvider
-type MockEmailProvider struct {
-	mu    sync.Mutex
-	calls int
-}
-
-func (m *MockEmailProvider) SendEmail(ctx context.Context, email, subject, body string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.calls++
-	log.Printf("MockEmailProvider: sent email to %s with subject: %s", email, subject)
-	return nil
-}
 
 func TestAuthService_Signup(t *testing.T) {
 	tests := []struct {
@@ -95,9 +78,6 @@ func TestAuthService_Signup(t *testing.T) {
 	}
 
 	hasher := utils.NewPasswordHasher()
-	emailProvider := &MockEmailProvider{}
-	emailPool := worker.NewEmailWorkerPool(worker.EmailWorkerPoolConfig{WorkerCount: 2, QueueSize: 100}, emailProvider)
-	defer emailPool.Stop()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -111,7 +91,7 @@ func TestAuthService_Signup(t *testing.T) {
 				SessionTTL: time.Hour * 24,
 				SecretKey:  "secret",
 			}
-			svc, err := service.NewAuthService(userRepo, otpRepo, sessionRepo, &MockProviderRepository{}, &MockSessionCache{}, hasher, emailPool, config, nil)
+			svc, err := service.NewAuthService(userRepo, otpRepo, sessionRepo, &MockProviderRepository{}, &MockSessionCache{}, hasher, config, nil)
 			require.NoError(t, err)
 			resp, err := svc.Signup(context.Background(), service.SignupRequest{Email: tt.email, Password: tt.password})
 
@@ -196,8 +176,6 @@ func TestAuthService_Login(t *testing.T) {
 	}
 
 	hasher := utils.NewPasswordHasher()
-	emailPool := worker.NewEmailWorkerPool(worker.EmailWorkerPoolConfig{WorkerCount: 1, QueueSize: 10}, &MockEmailProvider{})
-	defer emailPool.Stop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			userRepo := tt.mockUserRepo()
@@ -210,7 +188,7 @@ func TestAuthService_Login(t *testing.T) {
 				SessionTTL: time.Hour * 24,
 				SecretKey:  "secret",
 			}
-			svc, err := service.NewAuthService(userRepo, otpRepo, sessionRepo, &MockProviderRepository{}, &MockSessionCache{}, hasher, emailPool, config, nil)
+			svc, err := service.NewAuthService(userRepo, otpRepo, sessionRepo, &MockProviderRepository{}, &MockSessionCache{}, hasher, config, nil)
 			require.NoError(t, err)
 			resp, err := svc.Login(context.Background(), service.LoginRequest{Email: tt.email, Password: tt.password})
 
@@ -297,8 +275,6 @@ func TestAuthService_ValidateSession(t *testing.T) {
 	}
 
 	hasher := utils.NewPasswordHasher()
-	emailPool := worker.NewEmailWorkerPool(worker.EmailWorkerPoolConfig{WorkerCount: 1, QueueSize: 10}, &MockEmailProvider{})
-	defer emailPool.Stop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			userRepo := tt.mockUserRepo()
@@ -311,7 +287,7 @@ func TestAuthService_ValidateSession(t *testing.T) {
 				SessionTTL: time.Hour * 24,
 				SecretKey:  "secret",
 			}
-			svc, err := service.NewAuthService(userRepo, otpRepo, sessionRepo, &MockProviderRepository{}, &MockSessionCache{}, hasher, emailPool, config, nil)
+			svc, err := service.NewAuthService(userRepo, otpRepo, sessionRepo, &MockProviderRepository{}, &MockSessionCache{}, hasher, config, nil)
 			require.NoError(t, err)
 			resp, err := svc.ValidateSession(context.Background(), service.ValidateSessionRequest{Token: tt.token})
 

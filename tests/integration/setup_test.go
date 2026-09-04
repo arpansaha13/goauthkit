@@ -25,23 +25,20 @@ import (
 	"github.com/arpansaha13/goauthkit/repository"
 	"github.com/arpansaha13/goauthkit/service"
 	"github.com/arpansaha13/goauthkit/utils"
-	"github.com/arpansaha13/goauthkit/worker"
 )
 
 type AuthIntegrationTestSuite struct {
 	suite.Suite
-	Container     testcontainers.Container
-	DB            *pgxpool.Pool
-	Ctx           context.Context
-	ServerAddr    string
-	HTTPServer    *http.Server
-	GRPCServer    *grpc.Server
-	GRPCConn      *grpc.ClientConn
-	GRPCClient    pb.AuthServiceClient
-	AuthService   service.IAuthService
-	EmailPool     *worker.EmailWorkerPool
-	EmailProvider *worker.MockEmailProvider
-	Fixture       *TestFixture
+	Container   testcontainers.Container
+	DB          *pgxpool.Pool
+	Ctx         context.Context
+	ServerAddr  string
+	HTTPServer  *http.Server
+	GRPCServer  *grpc.Server
+	GRPCConn    *grpc.ClientConn
+	GRPCClient  pb.AuthServiceClient
+	AuthService service.IAuthService
+	Fixture     *TestFixture
 }
 
 func (s *AuthIntegrationTestSuite) SetupSuite() {
@@ -89,17 +86,10 @@ func (s *AuthIntegrationTestSuite) SetupSuite() {
 	sessionRepo := repository.NewSessionRepository(pg, cb)
 	hasher := utils.NewPasswordHasher()
 
-	s.EmailProvider = worker.NewMockEmailProvider()
-	s.EmailPool = worker.NewEmailWorkerPool(
-		worker.EmailWorkerPoolConfig{WorkerCount: 2, QueueSize: 50},
-		s.EmailProvider,
-	)
-
 	providerRepo := repository.NewProviderRepository(pg, cb)
 	sessionCache := &MockSessionCache{}
 	s.AuthService, err = service.NewAuthService(
 		userRepo, otpRepo, sessionRepo, providerRepo, sessionCache, hasher,
-		s.EmailPool,
 		service.AuthServiceConfig{
 			OTPExpiry:  10 * time.Minute,
 			OTPLength:  6,
@@ -126,9 +116,6 @@ func (s *AuthIntegrationTestSuite) TearDownSuite() {
 	}
 	if s.Container != nil {
 		s.Container.Terminate(s.Ctx)
-	}
-	if s.EmailPool != nil {
-		s.EmailPool.Stop()
 	}
 	if s.DB != nil {
 		s.DB.Close()
